@@ -1,4 +1,3 @@
-h1 { outline: 6px solid hotpink; }
 /* ====== ベース設定 ====== */
 :root{
   --bg: #0b1016;           /* 背景 */
@@ -80,4 +79,5 @@ body{
   border-top:1px solid rgba(255,255,255,.08);
   color:var(--muted);
 }
+
 
