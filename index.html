@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My Bucket List（編集可・自動連番・追加対応）</title>
-  <link rel="stylesheet" href="./style.css?v=22" />
+  <title>My Bucket List（全カテゴリ・自動連番）</title>
+  <link rel="stylesheet" href="./style.css?v=23" />
   <style>
     .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin:8px 0 16px}
     .btn{border:1px solid #222;background:#fff;border-radius:6px;padding:6px 10px;cursor:pointer}
@@ -40,24 +40,47 @@
 
   <script>
   // ====== データ ======
-  const KEY = "bucketlist_v3";
+  const KEY = "bucketlist_v4";
   const initialData = {
     updatedAt: new Date().toISOString(),
     categories: [
       { id:"travel", title:"🗺 旅行・冒険", items:[
         { text:"南極に行く", status:"todo" },
         { text:"小笠原で星空キャンプ", status:"todo" },
+        { text:"韓国でポーカートーナメントに参加する", status:"todo" },
       ]},
       { id:"learn", title:"📚 学習・スキル", items:[
         { text:"G検定に合格する", status:"todo" },
         { text:"E資格に合格する", status:"todo" },
+        { text:"AWS資格を取得する", status:"todo" },
+        { text:"Webアプリを公開する", status:"todo" },
+      ]},
+      { id:"career", title:"💼 キャリア・お金", items:[
+        { text:"個人開発で月◯万円の収益を得る", status:"todo" },
+        { text:"投資で資産◯◯万円を築く", status:"todo" },
+      ]},
+      { id:"life", title:"🏃 健康・ライフスタイル", items:[
+        { text:"体重60kgを達成する", status:"todo" },
+        { text:"週2回ジムに通う", status:"todo" },
+        { text:"キャンプ飯を自分で作る", status:"todo" },
+      ]},
+      { id:"hobby", title:"🎨 趣味・体験", items:[
+        { text:"Columbiaのキャンプウェアを揃える", status:"todo" },
+        { text:"星空の下で焚き火をする", status:"todo" },
+        { text:"ダンダダンを全巻読む", status:"todo" },
+      ]},
+      { id:"mind", title:"🌱 精神・教養", items:[
+        { text:"フランス革命を体系的に学ぶ", status:"todo" },
+        { text:"一冊に没頭する読書時間を作る", status:"todo" },
+        { text:"○○の映画を観る", status:"todo" },
+      ]},
+      { id:"log", title:"📅 進捗メモ", items:[
+        { text:"2025-08-31：サイト初版を公開", status:"progress" }
       ]},
     ]
   };
 
-  const statusClass = {
-    done:"done red", progress:"blue", ongoing:"green", todo:""
-  };
+  const statusClass = { done:"done red", progress:"blue", ongoing:"green", todo:"" };
 
   const load = ()=>JSON.parse(localStorage.getItem(KEY)||"null")||structuredClone(initialData);
   const save = (d)=>{d.updatedAt=new Date().toISOString();localStorage.setItem(KEY,JSON.stringify(d));
