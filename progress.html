@@ -4,9 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>実施状況 - My Bucket List</title>
-  <link rel="stylesheet" href="./style.css?v=1" />
+  <link rel="stylesheet" href="./style.css?v=2" />
   <style>
-    /* 軽いUI */
     .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 16px}
     .btn{border:1px solid #222;background:#fff;border-radius:6px;padding:6px 10px;cursor:pointer}
     .btn[aria-pressed="true"]{background:#111;color:#fff}
@@ -30,19 +29,18 @@
         <p class="muted">※ このページは <code>index.html</code> と同じ <strong>localStorage</strong> のデータを参照します。</p>
         <nav><a href="index.html">← Bucket List に戻る</a></nav>
 
-        <!-- フィルタ & 表示切替 -->
-        <div class="toolbar">
+        <div class="toolbar" id="toolbar">
           <span class="muted">フィルタ:</span>
-          <button class="btn" data-filter="all" aria-pressed="true">すべて</button>
-          <button class="btn" data-filter="month">今月中</button>
-          <button class="btn" data-filter="year">今年中</button>
-          <button class="btn" data-filter="5year">5年以内</button>
-          <button class="btn" data-filter="10year">10年以内</button>
-          <button class="btn" data-filter="someday">未分類/いつか</button>
+          <button type="button" class="btn" data-filter="all" aria-pressed="true">すべて</button>
+          <button type="button" class="btn" data-filter="month">今月中</button>
+          <button type="button" class="btn" data-filter="year">今年中</button>
+          <button type="button" class="btn" data-filter="5year">5年以内</button>
+          <button type="button" class="btn" data-filter="10year">10年以内</button>
+          <button type="button" class="btn" data-filter="someday">未分類/いつか</button>
 
           <span class="muted" style="margin-left:12px">表示:</span>
-          <button class="btn" id="mode-flat" aria-pressed="false">リスト</button>
-          <button class="btn" id="mode-grouped" aria-pressed="true">グループ</button>
+          <button type="button" class="btn" id="mode-flat" aria-pressed="false">リスト</button>
+          <button type="button" class="btn" id="mode-grouped" aria-pressed="true">グループ</button>
         </div>
 
         <p class="muted" id="updated">（最終更新日: —）</p>
@@ -53,94 +51,189 @@
   </div>
 
   <script>
-  // ====== 設定 ======
-  const KEY = "bucketlist_v4"; // index.html と合わせる
-  const TARGET_LABEL = {
-    month: "今月中",
-    year: "今年中",
-    "5year": "5年以内",
-    "10year": "10年以内",
-    someday: "未分類/いつか"
-  };
-  const statusClass = { done:"done red", progress:"blue", ongoing:"green", todo:"" };
+  document.addEventListener('DOMContentLoaded', () => {
+    // ====== 安全に読み込む ======
+    const KEY = "bucketlist_v4"; // index.html と合わせる
+    const safeParse = (raw) => { try { return JSON.parse(raw); } catch { return null; } };
+    let state = safeParse(localStorage.getItem(KEY)) || {};
+    if (!state.categories) state.categories = [];
 
-  // ====== データ読み込み & id 付与 ======
-  let state = JSON.parse(localStorage.getItem(KEY) || "null") || {};
-  if (!state.categories) state.categories = [];
-  // 各アイテムに恒久的な id を付与（なければ付与）
-  (function ensureIds(){
+    // 既存データ救済（id/target/status を補完）
     let seq = Date.now();
-    state.categories.forEach(cat=>{
-      cat.items.forEach(it=>{
-        if(!it.id){ it.id = `it_${seq++}`; }
-        if(!it.target){ it.target = "someday"; } // 既存データは未分類に
-        if(!it.status){ it.status = "todo"; }
+    state.categories.forEach(cat => {
+      if (!Array.isArray(cat.items)) cat.items = [];
+      cat.items.forEach(it => {
+        if (!it.id) it.id = `it_${seq++}`;
+        if (!it.target) it.target = "someday";
+        if (!it.status) it.status = "todo";
       });
     });
-    saveSilent(); // id付与のみ保存（updatedAtは更新しない）
-  })();
-
-  function save(){
-    state.updatedAt = new Date().toISOString();
+    // 保存（updatedAtは触らない）
     localStorage.setItem(KEY, JSON.stringify(state));
-    document.getElementById("updated").textContent =
-      `（最終更新日: ${new Date(state.updatedAt).toLocaleString()}）`;
-  }
-  function saveSilent(){
-    localStorage.setItem(KEY, JSON.stringify(state));
-    if(state.updatedAt){
-      document.getElementById("updated").textContent =
-        `（最終更新日: ${new Date(state.updatedAt).toLocaleString()}）`;
-    }
-  }
-  saveSilent();
 
-  // ====== ユーティリティ ======
-  const el=(tag,attrs={},...chs)=>{
-    const n=document.createElement(tag);
-    for(const[k,v] of Object.entries(attrs)){
-      if(k==="class") n.className=v;
-      else if(k.startsWith("on")) n.addEventListener(k.slice(2),v);
-      else n.setAttribute(k,v);
-    }
-    chs.forEach(c=>n.append(c instanceof Node?c:document.createTextNode(c)));
-    return n;
-  };
+    const TARGET_LABEL = {
+      month: "今月中", year: "今年中", "5year": "5年以内", "10year": "10年以内", someday: "未分類/いつか"
+    };
+    const statusClass = { done:"done red", progress:"blue", ongoing:"green", todo:"" };
 
-  function walkItems(){
-    // { id, text, status, target, categoryTitle, categoryId }
-    const out=[];
-    state.categories.forEach(cat=>{
-      cat.items.forEach(it=>{
-        out.push({...it, categoryTitle:cat.title, categoryId:cat.id});
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => document.querySelectorAll(s);
+
+    // 画面状態
+    let currentFilter = "all";   // all | month | year | 5year | 10year | someday
+    let viewMode = "grouped";    // grouped | flat
+
+    // ユーティリティ
+    const el=(tag,attrs={},...chs)=>{
+      const n=document.createElement(tag);
+      for(const[k,v] of Object.entries(attrs)){
+        if(k==="class") n.className=v;
+        else if(k.startsWith("on")) n.addEventListener(k.slice(2),v);
+        else n.setAttribute(k,v);
+      }
+      chs.forEach(c=>n.append(c instanceof Node?c:document.createTextNode(c)));
+      return n;
+    };
+    const walkItems=()=>{
+      const out=[];
+      state.categories.forEach(cat=>{
+        (cat.items||[]).forEach(it=>{
+          out.push({...it, categoryTitle:cat.title||"", categoryId:cat.id||""});
+        });
       });
-    });
-    return out;
-  }
-
-  // ====== 画面状態 ======
-  let currentFilter = "all";   // all | month | year | 5year | 10year | someday
-  let viewMode = "grouped";    // grouped | flat
-
-  // ====== 描画 ======
-  function render(){
-    const box = document.getElementById("progress");
-    box.innerHTML = "";
-
-    const allItems = walkItems();
-
-    const filtered = allItems.filter(it=>{
-      if(currentFilter==="all") return true;
-      return (it.target || "someday") === currentFilter;
-    });
-
-    if(viewMode==="flat"){
-      renderFlat(box, filtered);
-    }else{
-      renderGrouped(box, filtered);
+      return out;
+    };
+    const save=()=>{
+      state.updatedAt = new Date().toISOString();
+      localStorage.setItem(KEY, JSON.stringify(state));
+      const up = $("#updated");
+      if (up) up.textContent = `（最終更新日: ${new Date(state.updatedAt).toLocaleString()}）`;
+    };
+    // 初回 updated 表示
+    if (state.updatedAt) {
+      $("#updated").textContent = `（最終更新日: ${new Date(state.updatedAt).toLocaleString()}）`;
     }
-  }
 
-  function renderFlat(root, items){
-    const ol = el("ol", {class:"items"});
-    // 並びは target → statu
+    // 描画
+    function render(){
+      const box = $("#progress");
+      if (!box) return;
+      box.innerHTML = "";
+
+      const items = walkItems().filter(it=>{
+        if(currentFilter==="all") return true;
+        return (it.target||"someday")===currentFilter;
+      });
+
+      if(viewMode==="flat"){
+        renderFlat(box, items);
+      }else{
+        renderGrouped(box, items);
+      }
+    }
+
+    function renderFlat(root, items){
+      const ol = el("ol",{class:"items"});
+      items.sort((a,b)=>{
+        const t=(a.target||"someday").localeCompare(b.target||"someday");
+        if(t!==0) return t;
+        const s=a.status.localeCompare(b.status);
+        if(s!==0) return s;
+        return (a.text||"").localeCompare(b.text||"");
+      });
+      items.forEach((it,i)=> ol.append(renderLineItem(it, i+1)));
+      if(items.length===0) ol.append(el("li",{class:"muted"},"該当なし"));
+      root.append(ol);
+    }
+
+    function renderGrouped(root, items){
+      const groups={month:[],year:[],"5year":[],"10year":[],someday:[]};
+      items.forEach(it=> groups[it.target||"someday"].push(it));
+      ["month","year","5year","10year","someday"].forEach(key=>{
+        const list=groups[key];
+        const sec=el("div",{class:"section"});
+        sec.append(
+          el("h2",{}, `${TARGET_LABEL[key]}`, el("span",{class:"meta"}, `（${list.length}件）`))
+        );
+        const ol=el("ol",{class:"items"});
+        list.forEach((it,i)=> ol.append(renderLineItem(it,i+1)));
+        if(list.length===0) ol.append(el("li",{class:"muted"},"なし"));
+        sec.append(ol);
+        root.append(sec);
+      });
+    }
+
+    function renderLineItem(it, no){
+      const li=el("li");
+      const label=el("span",{class:statusClass[it.status]||""}, `${no}. ${it.text||""}`);
+      const cat=el("span",{class:"pill",style:"margin-left:8px"}, it.categoryTitle||"");
+
+      const targetSel=el("select",{title:"目標時期を変更",onchange:(e)=>updateTarget(it.id,e.target.value)},
+        el("option",{value:"month", selected:it.target==="month"},"今月中"),
+        el("option",{value:"year",  selected:it.target==="year"},"今年中"),
+        el("option",{value:"5year", selected:it.target==="5year"},"5年以内"),
+        el("option",{value:"10year",selected:it.target==="10year"},"10年以内"),
+        el("option",{value:"someday", selected:!it.target || it.target==="someday"},"未分類/いつか"),
+      );
+      const statusSel=el("select",{title:"状態を変更",onchange:(e)=>updateStatus(it.id,e.target.value)},
+        el("option",{value:"todo",    selected:it.status==="todo"},"未"),
+        el("option",{value:"progress",selected:it.status==="progress"},"進捗"),
+        el("option",{value:"ongoing", selected:it.status==="ongoing"},"継続"),
+        el("option",{value:"done",    selected:it.status==="done"},"達成"),
+      );
+
+      const ctrls=el("span",{class:"controls"}, targetSel, statusSel);
+      li.append(label, cat, ctrls);
+      return li;
+    }
+
+    function findItemById(id){
+      for(const cat of state.categories){
+        const idx=(cat.items||[]).findIndex(x=>x.id===id);
+        if(idx>=0) return {cat, idx};
+      }
+      return null;
+    }
+    function updateTarget(id,val){
+      const ref=findItemById(id); if(!ref) return;
+      ref.cat.items[ref.idx].target=val; save(); render();
+    }
+    function updateStatus(id,val){
+      const ref=findItemById(id); if(!ref) return;
+      ref.cat.items[ref.idx].status=val; save(); render();
+    }
+
+    // ====== イベント（安全策：委譲 + 存在チェック） ======
+    const tb = $("#toolbar");
+    if (tb) {
+      tb.addEventListener("click", (e)=>{
+        const btn = e.target.closest('.btn');
+        if(!btn) return;
+        if (btn.hasAttribute('data-filter')) {
+          $$('#toolbar .btn[data-filter]').forEach(b=>b.setAttribute('aria-pressed','false'));
+          btn.setAttribute('aria-pressed','true');
+          currentFilter = btn.getAttribute('data-filter');
+          render();
+        } else if (btn.id === 'mode-flat') {
+          $("#mode-flat").setAttribute('aria-pressed','true');
+          $("#mode-grouped").setAttribute('aria-pressed','false');
+          viewMode="flat"; render();
+        } else if (btn.id === 'mode-grouped') {
+          $("#mode-grouped").setAttribute('aria-pressed','true');
+          $("#mode-flat").setAttribute('aria-pressed','false');
+          viewMode="grouped"; render();
+        }
+      });
+    }
+
+    // 初回描画
+    render();
+
+    // もし何かJSエラーが起きていたら気づけるように
+    window.addEventListener('error', (e)=>{
+      console.error('progress.html error:', e.message, e.filename, e.lineno);
+    });
+  });
+  </script>
+</body>
+</html>
