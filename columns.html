@@ -3,324 +3,364 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Columns - My Portal</title>
-  <link rel="stylesheet" href="./style.css?v=24" />
+  <title>Column | My Portal</title>
+  <link rel="stylesheet" href="./style.css?v=26" />
   <style>
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 16px}
-    .btn{border:1px solid #222;background:#fff;border-radius:6px;padding:6px 10px;cursor:pointer}
-    .btn:hover{filter:brightness(.97)}
-    .input, textarea{border:1px solid #cbd5e1;border-radius:8px;padding:8px}
+    /* 参考サイト風：ページ見出しと縦リスト */
+    .container{max-width:920px;margin:0 auto;padding:16px}
+    .topnav{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .topnav a{border:1px solid #111;border-radius:8px;padding:6px 10px;text-decoration:none;color:#111;font-weight:600}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0 16px}
+    .input, .select{border:1px solid #cbd5e1;border-radius:8px;padding:8px}
     .input{min-width:220px}
+    .list{border-top:1px dashed #e5e7eb}
+    .row{padding:10px 0;border-bottom:1px dashed #e5e7eb;display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .left{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .type{font-weight:700}
+    .title{font-weight:700}
+    .date{color:#475569;font-size:12px;white-space:nowrap}
+    .muted{color:#666;font-size:12px}
+    .pill{display:inline-block;padding:2px 8px;border:1px solid #94a3b8;border-radius:999px;font-size:12px;color:#334155}
+    .btn{border:1px solid #111;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}
+    .btn:hover{filter:brightness(.97)}
+    .card{border:2px solid #111;border-radius:12px;padding:12px}
+    .preview{border:1px dashed #cbd5e1;border-radius:8px;padding:12px;background:#fafafa;min-height:120px}
     .grid{display:grid;gap:12px}
     @media(min-width:900px){ .grid-2{grid-template-columns:1fr 1fr} }
-    .card{border:2px solid #222;border-radius:10px;padding:12px}
-    .muted{color:#666;font-size:12px}
-    .pill{display:inline-block;padding:2px 8px;border:1px solid #94a3b8;border-radius:999px;font-size:12px;color:#334155;margin-right:6px}
-    .list-item{padding:8px 0;border-bottom:1px dashed #e5e7eb}
-    .list-item:last-child{border-bottom:none}
-    .title-link{color:#111;text-decoration:none;font-weight:700}
-    .title-link:hover{text-decoration:underline}
-    .right{display:flex;gap:6px;align-items:center}
-    .preview{border:1px dashed #cbd5e1;border-radius:8px;padding:12px;background:#fafafa;min-height:120px}
-    .badge{font-size:12px;border:1px solid #111;border-radius:999px;padding:1px 8px}
-    .badge.green{background:#eaffea}
-    .badge.gray{background:#f3f4f6}
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    /* 記事詳細 */
+    .article-title{margin:0}
+    .article-meta{color:#64748b;font-size:12px;margin:6px 0}
   </style>
 </head>
 <body>
   <div class="paper">
     <div class="sheet">
-      <header class="sheet__header">
-        <h1>📘 Columns（コラム）</h1>
-        <p class="muted">このページはブラウザの <strong>localStorage</strong> に保存します（端末ごとに別）。</p>
-        <nav class="row">
-          <a href="index.html" class="btn">← Bucket List に戻る</a>
-          <button id="exportBtn" class="btn" type="button">JSONエクスポート</button>
-          <label class="btn" style="position:relative;overflow:hidden">
-            JSONインポート
-            <input id="importInput" type="file" accept="application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer">
-          </label>
-          <button id="resetBtn" class="btn" type="button">初期化</button>
+      <div class="container">
+        <!-- グローバルナビ（参考サイトは上部にメニュー） -->
+        <nav class="topnav">
+          <a href="index.html">Home</a>
+          <a href="progress.html">Articles: 実施状況</a>
+          <a href="columns.html"><strong>Column</strong></a>
         </nav>
-      </header>
 
-      <!-- 作成フォーム -->
-      <section class="card" aria-labelledby="composer">
-        <h2 id="composer" style="margin:0 0 8px">✍️ 新規コラム</h2>
-        <div class="grid grid-2">
-          <div class="grid">
-            <input id="title" class="input" type="text" placeholder="タイトル">
-            <input id="tags" class="input" type="text" placeholder="タグ（例: python,入門）カンマ区切り">
-            <select id="level" class="input">
-              <option value="Beginner">Beginner（入門）</option>
-              <option value="Intermediate">Intermediate（中級）</option>
-              <option value="Advanced">Advanced（上級）</option>
-            </select>
-            <div class="row">
-              <label><input id="published" type="checkbox"> 公開</label>
-              <span class="muted">公開にすると一覧に「公開」バッジがつきます</span>
+        <header class="sheet__header" style="margin-bottom:8px">
+          <h1>Column <span class="muted">コラム</span></h1>
+          <p class="muted" id="updated">（最終更新日: —）</p>
+        </header>
+
+        <!-- 作成フォーム（上部に設置→すぐ投稿できる） -->
+        <section class="card" aria-labelledby="composer">
+          <h2 id="composer" style="margin:0 0 8px">✍️ 新規コラム</h2>
+          <div class="grid grid-2">
+            <div class="grid">
+              <input id="title" class="input" type="text" placeholder="タイトル">
+              <input id="tags" class="input" type="text" placeholder="タグ（カンマ区切り）">
+              <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
+                <select id="type" class="select" title="タイプ">
+                  <option>コラム</option>
+                  <option>月報</option>
+                  <option>書評</option>
+                  <option>達成済</option>
+                  <option>その他</option>
+                </select>
+                <select id="genre" class="select" title="ジャンル"></select>
+              </div>
+              <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
+                <select id="level" class="select" title="難易度">
+                  <option>Beginner</option>
+                  <option>Intermediate</option>
+                  <option>Advanced</option>
+                </select>
+                <label class="muted"><input id="published" type="checkbox"> 公開</label>
+              </div>
+              <input id="date" class="input" type="date" title="日付（空なら今日）">
+              <div style="display:flex;gap:8px">
+                <input id="genreNew" class="input" type="text" placeholder="新しいジャンル名（任意）">
+                <button id="addGenreBtn" class="btn" type="button">ジャンル追加</button>
+              </div>
+            </div>
+            <div class="grid">
+              <textarea id="content" rows="10" class="input" placeholder="本文（簡易Markdown: # 見出し, **強調**, - 箇条書き, ```コード``` など）"></textarea>
+              <div>
+                <h3 style="margin:6px 0">プレビュー</h3>
+                <div id="preview" class="preview"></div>
+              </div>
             </div>
           </div>
-          <div class="grid">
-            <textarea id="content" rows="10" placeholder="本文（簡易Markdown: # 見出し, **強調**, - 箇条書き, ```コード``` など）"></textarea>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+            <button id="saveBtn" class="btn" type="button">保存</button>
+            <button id="clearBtn" class="btn" type="button">クリア</button>
+            <button id="resetBtn" class="btn" type="button">初期化</button>
+            <button id="exportBtn" class="btn" type="button">JSONエクスポート</button>
+            <label class="btn" style="position:relative;overflow:hidden">
+              JSONインポート
+              <input id="importInput" type="file" accept="application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer">
+            </label>
+            <span class="muted" id="statusText"></span>
           </div>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <button id="saveBtn" class="btn" type="button">保存</button>
-          <button id="clearBtn" class="btn" type="button">クリア</button>
-          <span class="muted" id="statusText"></span>
-        </div>
-        <div style="margin-top:12px">
-          <h3 style="margin:0 0 6px">プレビュー</h3>
-          <div id="preview" class="preview"></div>
-        </div>
-      </section>
+        </section>
 
-      <!-- フィルタ -->
-      <section class="toolbar">
-        <input id="q" class="input" type="search" placeholder="検索（タイトル/本文/タグ）">
-        <select id="filterLevel" class="input">
-          <option value="all">すべての難易度</option>
-          <option>Beginner</option>
-          <option>Intermediate</option>
-          <option>Advanced</option>
-        </select>
-        <select id="filterPub" class="input">
-          <option value="all">公開/下書きすべて</option>
-          <option value="published">公開のみ</option>
-          <option value="draft">下書きのみ</option>
-        </select>
-      </section>
+        <!-- フィルタ -->
+        <section class="toolbar">
+          <input id="q" class="input" type="search" placeholder="検索（タイトル/本文/タグ）">
+          <select id="filterType" class="select">
+            <option value="all">すべてのタイプ</option>
+            <option>コラム</option>
+            <option>月報</option>
+            <option>書評</option>
+            <option>達成済</option>
+            <option>その他</option>
+          </select>
+          <select id="filterGenre" class="select"></select>
+          <select id="filterLevel" class="select">
+            <option value="all">すべての難易度</option>
+            <option>Beginner</option>
+            <option>Intermediate</option>
+            <option>Advanced</option>
+          </select>
+          <select id="filterPub" class="select">
+            <option value="all">公開/下書きすべて</option>
+            <option value="published">公開のみ</option>
+            <option value="draft">下書きのみ</option>
+          </select>
+        </section>
 
-      <!-- 一覧 -->
-      <section class="card">
-        <div class="row" style="justify-content:space-between">
-          <h2 style="margin:0">📚 コラム一覧</h2>
-          <span class="muted" id="updated">（最終更新日: —）</span>
-        </div>
-        <div id="list"></div>
-      </section>
+        <!-- 一覧 -->
+        <section class="list" id="list"></section>
+      </div>
     </div>
   </div>
 
   <script>
-  // === 設定 ===
-  const KEY = "columns_v1";
+  // ===== 設定 =====
+  const KEY = "columns_v3";
+  let GENRES = ["General","Programming","Machine Learning","Cloud/Infra","Web","Study","Life","Essay"];
 
-  // 簡易Markdown → HTML（最低限）
+  // 簡易Markdown → HTML
   function md(s=""){
-    // エスケープ
     s = s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    // コードブロック
-    s = s.replace(/```([\s\S]*?)```/g, (_,code)=>`<pre><code>${code}</code></pre>`);
-    // 見出し
-    s = s.replace(/^###\s+(.*)$/gm, "<h3>$1</h3>")
-         .replace(/^##\s+(.*)$/gm, "<h2>$1</h2>")
-         .replace(/^#\s+(.*)$/gm, "<h1>$1</h1>");
-    // 強調
-    s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-         .replace(/\*(.+?)\*/g, "<em>$1</em>");
-    // 箇条書き
-    s = s.replace(/^(?:-|\*)\s+(.*)$/gm, "<li>$1</li>");
-    s = s.replace(/(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g, "<ul>$1</ul>");
-    // 改行
-    s = s.replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>");
+    s = s.replace(/```([\s\S]*?)```/g, (_,c)=>`<pre><code>${c}</code></pre>`);
+    s = s.replace(/^###\s+(.*)$/gm,"<h3>$1</h3>").replace(/^##\s+(.*)$/gm,"<h2>$1</h2>").replace(/^#\s+(.*)$/gm,"<h1>$1</h1>");
+    s = s.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>");
+    s = s.replace(/^(?:-|\*)\s+(.*)$/gm,"<li>$1</li>").replace(/(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g,"<ul>$1</ul>");
+    s = s.replace(/\n{2,}/g,"</p><p>").replace(/\n/g,"<br>");
     return `<p>${s}</p>`;
   }
 
   // ストレージ
-  const load = () => JSON.parse(localStorage.getItem(KEY) || "null") || {updatedAt:null, items:[]};
+  const load = () => JSON.parse(localStorage.getItem(KEY) || "null") || {updatedAt:null, items:[], genres:GENRES};
   const save = (data) => {
     data.updatedAt = new Date().toISOString();
+    data.genres = GENRES;
     localStorage.setItem(KEY, JSON.stringify(data));
-    document.getElementById("updated").textContent = `（最終更新日: ${new Date(data.updatedAt).toLocaleString()}）`;
+    if(data.updatedAt) document.getElementById("updated").textContent = `（最終更新日: ${new Date(data.updatedAt).toLocaleString()}）`;
   };
   let state = load();
+  if(Array.isArray(state.genres) && state.genres.length) GENRES = state.genres.slice();
 
-  // DOM util
-  const el = (t,a={},...cs)=>{ const n=document.createElement(t); for(const[k,v] of Object.entries(a)){
-    if(k==="class") n.className=v; else if(k.startsWith("on")) n.addEventListener(k.slice(2),v); else n.setAttribute(k,v);
-  } cs.forEach(c=>n.append(c instanceof Node?c:document.createTextNode(c))); return n; };
+  // 既存データを補完
+  (state.items||[]).forEach(it=>{
+    if(!it.genre) it.genre="General";
+    if(!it.type) it.type="コラム";
+  });
 
-  // フォーム要素
+  // UI参照
   const $ = s => document.querySelector(s);
-  const titleEl = $("#title"), tagsEl=$("#tags"), levelEl=$("#level"),
-        publishedEl=$("#published"), contentEl=$("#content"),
-        statusText=$("#statusText"), previewEl=$("#preview");
+  const titleEl=$("#title"), tagsEl=$("#tags"), typeEl=$("#type"), genreSel=$("#genre"),
+        levelEl=$("#level"), pubEl=$("#published"), contentEl=$("#content"),
+        dateEl=$("#date"), previewEl=$("#preview"), statusText=$("#statusText"),
+        filterType=$("#filterType"), filterGenre=$("#filterGenre"), filterLevel=$("#filterLevel"),
+        filterPub=$("#filterPub"), listBox=$("#list");
+
+  function refreshGenreOptions(){
+    genreSel.innerHTML = GENRES.map(g=>`<option>${g}</option>`).join("");
+    filterGenre.innerHTML = `<option value="all">すべてのジャンル</option>` + GENRES.map(g=>`<option>${g}</option>`).join("");
+  }
+  refreshGenreOptions();
 
   // プレビュー
   function updatePreview(){ previewEl.innerHTML = md(contentEl.value||""); }
-  contentEl.addEventListener("input", updatePreview);
-  updatePreview();
+  contentEl.addEventListener("input", updatePreview); updatePreview();
+
+  // ジャンル追加
+  document.getElementById("addGenreBtn").addEventListener("click", ()=>{
+    const g = (document.getElementById("genreNew").value||"").trim(); if(!g) return;
+    if(!GENRES.includes(g)) GENRES.push(g);
+    document.getElementById("genreNew").value=""; refreshGenreOptions(); save(state);
+  });
 
   // 保存
-  $("#saveBtn").addEventListener("click", ()=>{
+  document.getElementById("saveBtn").addEventListener("click", ()=>{
     const id = "c_" + Date.now();
+    const today = new Date();
+    const y = dateEl.value ? null : today.getFullYear();
+    const m = dateEl.value ? null : today.getMonth()+1;
+    const d = dateEl.value ? null : today.getDate();
     const item = {
       id,
       title: (titleEl.value||"").trim(),
       tags: (tagsEl.value||"").split(",").map(s=>s.trim()).filter(Boolean),
+      type: typeEl.value || "コラム",
+      genre: genreSel.value || "General",
       level: levelEl.value,
-      published: !!publishedEl.checked,
+      published: !!pubEl.checked,
       content: contentEl.value||"",
+      date: dateEl.value || `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     if(!item.title){ alert("タイトルを入力してください"); return; }
     state.items.unshift(item);
-    save(state);
-    clearForm();
-    render();
-    statusText.textContent = "保存しました";
-    setTimeout(()=>statusText.textContent="", 1500);
+    save(state); clearForm(); render();
+    statusText.textContent="保存しました"; setTimeout(()=>statusText.textContent="",1500);
   });
 
   function clearForm(){
-    titleEl.value = ""; tagsEl.value = ""; levelEl.value="Beginner";
-    publishedEl.checked = false; contentEl.value = ""; updatePreview();
+    titleEl.value=""; tagsEl.value=""; typeEl.value="コラム"; genreSel.value=GENRES[0]||"General";
+    levelEl.value="Beginner"; pubEl.checked=false; contentEl.value=""; dateEl.value=""; updatePreview();
   }
-  $("#clearBtn").addEventListener("click", clearForm);
+  document.getElementById("clearBtn").addEventListener("click", clearForm);
 
   // エクスポート/インポート/初期化
-  $("#exportBtn").addEventListener("click", ()=>{
-    const blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob); a.download = "columns.json"; a.click();
-    URL.revokeObjectURL(a.href);
+  document.getElementById("exportBtn").addEventListener("click", ()=>{
+    const blob = new Blob([JSON.stringify({...state, genres:GENRES},null,2)], {type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="columns.json"; a.click(); URL.revokeObjectURL(a.href);
   });
-  $("#importInput").addEventListener("change", async (e)=>{
-    const f = e.target.files[0]; if(!f) return;
+  document.getElementById("importInput").addEventListener("change", async (e)=>{
+    const f=e.target.files[0]; if(!f) return;
     try{
-      const txt = await f.text();
-      const data = JSON.parse(txt);
+      const txt=await f.text(); const data=JSON.parse(txt);
       if(!Array.isArray(data.items)) throw new Error("invalid");
-      state = data; save(state); render();
+      state={updatedAt:data.updatedAt||null, items:data.items||[]};
+      if(Array.isArray(data.genres)&&data.genres.length) GENRES=data.genres.slice();
+      (state.items||[]).forEach(it=>{ if(!it.genre) it.genre="General"; if(!it.type) it.type="コラム"; });
+      refreshGenreOptions(); save(state); render();
     }catch(err){ alert("JSONの読み込みに失敗しました"); }
-    e.target.value = "";
+    e.target.value="";
   });
-  $("#resetBtn").addEventListener("click", ()=>{
+  document.getElementById("resetBtn").addEventListener("click", ()=>{
     if(confirm("すべてのコラムを削除して初期化しますか？")){
-      state = {updatedAt:null, items:[]}; save(state); render();
+      state={updatedAt:null, items:[]}; save(state); render();
     }
   });
 
-  // 一覧・検索
-  $("#q").addEventListener("input", render);
-  $("#filterLevel").addEventListener("change", render);
-  $("#filterPub").addEventListener("change", render);
+  // フィルタ
+  ["input","change"].forEach(ev=>{
+    document.getElementById("q").addEventListener("input", render);
+    filterType.addEventListener(ev, render);
+    filterGenre.addEventListener(ev, render);
+    filterLevel.addEventListener(ev, render);
+    filterPub.addEventListener(ev, render);
+  });
 
+  // 一覧描画（参考サイトの並び：タイプラベル＋タイトル＋日付の縦並び）:contentReference[oaicite:2]{index=2}
   function render(){
-    const box = $("#list"); box.innerHTML = "";
-    if(state.updatedAt){
-      $("#updated").textContent = `（最終更新日: ${new Date(state.updatedAt).toLocaleString()}）`;
-    }
+    listBox.innerHTML="";
+    if(state.updatedAt){ document.getElementById("updated").textContent = `（最終更新日: ${new Date(state.updatedAt).toLocaleString()}）`; }
 
-    const q = ($("#q").value||"").toLowerCase();
-    const lv = $("#filterLevel").value;
-    const pub = $("#filterPub").value;
+    const q = (document.getElementById("q").value||"").toLowerCase();
+    const t = filterType.value;
+    const g = filterGenre.value;
+    const lv = filterLevel.value;
+    const pub = filterPub.value;
 
     let items = [...(state.items||[])];
     items = items.filter(it=>{
-      if(lv!=="all" && it.level !== lv) return false;
+      if(t!=="all" && it.type!==t) return false;
+      if(g!=="all" && (it.genre||"General")!==g) return false;
+      if(lv!=="all" && it.level!==lv) return false;
       if(pub==="published" && !it.published) return false;
       if(pub==="draft" && it.published) return false;
       if(q){
-        const hay = [it.title, it.content, (it.tags||[]).join(",")].join(" ").toLowerCase();
+        const hay=[it.title,it.content,(it.tags||[]).join(","),it.type,it.genre].join(" ").toLowerCase();
         if(!hay.includes(q)) return false;
       }
       return true;
     });
 
+    // 新着順（date → updatedAt）でソート
+    items.sort((a,b)=>{
+      const ad = new Date(a.date||a.updatedAt||0).getTime();
+      const bd = new Date(b.date||b.updatedAt||0).getTime();
+      return bd - ad;
+    });
+
     if(items.length===0){
-      box.append(el("p",{class:"muted"},"まだコラムがありません。上のフォームから作成してください。"));
+      listBox.append(childRow(el("span",{class:"muted"},"該当なし")));
       return;
     }
 
     items.forEach(it=>{
-      const row = el("div",{class:"list-item"});
-      const head = el("div",{class:"row", style:"justify-content:space-between"});
-      const left = el("div",{},
-        el("a",{href:"#", class:"title-link", onclick:(e)=>{e.preventDefault(); openArticle(it.id);}}, it.title),
-        " ",
-        el("span",{class:"badge "+(it.published?"green":"gray")}, it.published?"公開":"下書き"),
-        " ",
-        el("span",{class:"muted"}, new Date(it.updatedAt).toLocaleString())
+      const left = el("div",{class:"left"},
+        el("span",{class:"type"},"〖"+(it.type||"コラム")+"〗"),
+        el("a",{href:"#", class:"title", onclick:(e)=>{e.preventDefault(); openArticle(it.id);}}, it.title),
+        el("span",{class:"pill"}, it.genre||"General"),
+        ...(it.tags||[]).map(t=>el("span",{class:"pill"}, t))
       );
-      const right = el("div",{class:"right"},
-        el("span",{}, it.level),
-        ...(it.tags||[]).map(t=>el("span",{class:"pill"}, t)),
-        el("button",{class:"btn", onclick:()=>openEditor(it.id)}, "編集"),
-        el("button",{class:"btn", onclick:()=>togglePub(it.id)}, it.published?"非公開に":"公開に"),
-        el("button",{class:"btn", onclick:()=>remove(it.id)}, "削除"),
-      );
-      head.append(left, right);
-      row.append(head);
-      box.append(row);
+      const right = el("div",{class:"date"}, formatJPDate(it.date||it.updatedAt));
+      const row = el("div",{class:"row"}); row.append(left,right); listBox.append(row);
     });
   }
+  function childRow(node){ const wrap=el("div",{class:"row"}); wrap.append(node); return wrap; }
 
+  function formatJPDate(s){
+    const d=new Date(s); if(isNaN(d)) return s||"";
+    return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+  }
+
+  // 詳細ビュー（一覧に戻るリンク付き）
   function openArticle(id){
-    const it = state.items.find(x=>x.id===id);
-    if(!it) return;
-    const box = $("#list"); box.innerHTML="";
+    const it=(state.items||[]).find(x=>x.id===id); if(!it) return;
+    listBox.innerHTML="";
+    const box = el("div",{class:"card"});
     box.append(
-      el("div",{class:"card"},
-        el("h2",{}, it.title),
-        el("div",{}, el("span",{class:"pill"}, it.level), " ", ...(it.tags||[]).map(t=>el("span",{class:"pill"}, t))),
-        el("div",{class:"muted", style:"margin:6px 0"}, it.published?"公開":"下書き", " / 更新: ", new Date(it.updatedAt).toLocaleString()),
-        el("hr"),
-        el("div",{class:"preview", style:"background:#fff"}, el("div",{innerHTML: md(it.content)})),
-        el("div",{class:"row", style:"margin-top:12px"},
-          el("button",{class:"btn", onclick:()=>openEditor(id)},"編集"),
-          el("button",{class:"btn", onclick:()=>render()},"一覧に戻る")
-        )
+      el("h2",{class:"article-title"}, it.title),
+      el("div",{}, el("span",{class:"pill"}, it.type||"コラム"), " ", el("span",{class:"pill"}, it.genre||"General"), " ", el("span",{class:"pill"}, it.level)),
+      el("div",{class:"article-meta"}, (it.published?"公開":"下書き")+" / "+formatJPDate(it.date||it.updatedAt)),
+      el("hr"),
+      el("div",{class:"preview", style:"background:#fff"}, el("div",{innerHTML: md(it.content)})),
+      el("div",{style:"display:flex;gap:8px;margin-top:12px"},
+        el("button",{class:"btn",onclick:()=>openEditor(id)},"編集"),
+        el("button",{class:"btn",onclick:()=>render()},"一覧に戻る"),
+        el("button",{class:"btn",onclick:()=>togglePub(id)}, it.published?"非公開に":"公開に"),
+        el("button",{class:"btn",onclick:()=>remove(id)},"削除")
       )
     );
+    listBox.append(box);
   }
 
   function openEditor(id){
-    const it = state.items.find(x=>x.id===id);
-    if(!it) return;
-    // フォームに流し込む
-    titleEl.value = it.title;
-    tagsEl.value = (it.tags||[]).join(",");
-    levelEl.value = it.level;
-    publishedEl.checked = !!it.published;
-    contentEl.value = it.content;
-    updatePreview();
-    statusText.textContent = "編集モード：保存で上書きします";
-
-    // 保存ボタンの挙動を一時差し替え
-    const saveBtn = document.getElementById("saveBtn");
-    const orig = saveBtn.onclick;
-    saveBtn.onclick = ()=>{
-      it.title = (titleEl.value||"").trim();
-      it.tags = (tagsEl.value||"").split(",").map(s=>s.trim()).filter(Boolean);
-      it.level = levelEl.value;
-      it.published = !!publishedEl.checked;
-      it.content = contentEl.value||"";
-      it.updatedAt = new Date().toISOString();
-      save(state);
-      clearForm();
-      render();
-      statusText.textContent = "更新しました";
-      setTimeout(()=>statusText.textContent="", 1500);
-      saveBtn.onclick = orig; // 元に戻す
+    const it=(state.items||[]).find(x=>x.id===id); if(!it) return;
+    titleEl.value=it.title; tagsEl.value=(it.tags||[]).join(","); typeEl.value=it.type||"コラム";
+    // 未登録ジャンルなら追加してから選択
+    if(!GENRES.includes(it.genre||"General")){ GENRES.push(it.genre); refreshGenreOptions(); }
+    genreSel.value=it.genre||"General";
+    levelEl.value=it.level; pubEl.checked=!!it.published; contentEl.value=it.content; dateEl.value=(it.date||"");
+    updatePreview(); statusText.textContent="編集モード：保存で上書きします";
+    const saveBtn=document.getElementById("saveBtn"); const orig=saveBtn.onclick;
+    saveBtn.onclick=()=>{
+      it.title=(titleEl.value||"").trim();
+      it.tags=(tagsEl.value||"").split(",").map(s=>s.trim()).filter(Boolean);
+      it.type=typeEl.value||"コラム";
+      it.genre=genreSel.value||"General";
+      it.level=levelEl.value;
+      it.published=!!pubEl.checked;
+      it.content=contentEl.value||"";
+      it.date=dateEl.value || it.date || new Date().toISOString().slice(0,10);
+      it.updatedAt=new Date().toISOString();
+      save(state); clearForm(); render();
+      statusText.textContent="更新しました"; setTimeout(()=>statusText.textContent="",1500);
+      saveBtn.onclick=orig;
     };
   }
 
   function togglePub(id){
-    const it = state.items.find(x=>x.id===id); if(!it) return;
-    it.published = !it.published;
-    it.updatedAt = new Date().toISOString();
-    save(state); render();
+    const it=(state.items||[]).find(x=>x.id===id); if(!it) return;
+    it.published=!it.published; it.updatedAt=new Date().toISOString(); save(state); render();
   }
-
   function remove(id){
     if(!confirm("この記事を削除しますか？")) return;
-    state.items = state.items.filter(x=>x.id!==id);
-    save(state); render();
+    state.items=(state.items||[]).filter(x=>x.id!==id); save(state); render();
   }
 
   // 初期表示
