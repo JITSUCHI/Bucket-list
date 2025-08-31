@@ -1,15 +1,103 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>My Bucket List</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Bucket List｜あなたの名前</title>
+  <meta name="description" content="人生でやりたいことをカテゴリ別に整理し、進捗を記録するバケットリスト。" />
+  <meta name="theme-color" content="#0ea5e9" />
+
+  <!-- OGP（SNSでシェアしたとき用。画像は後で差し替えOK） -->
+  <meta property="og:title" content="Bucket List" />
+  <meta property="og:description" content="カテゴリ別に進捗を管理する私のバケットリスト。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://あなたのユーザー名.github.io/リポジトリ名/" />
+  <!-- <meta property="og:image" content="https://…/ogp.png" /> -->
+
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <h1>バケットリスト 🎯</h1>
-  <ul>
-    <li><input type="checkbox"> 南極に行く</li>
-    <li><input type="checkbox"> 韓国でポーカーをする</li>
-    <li><input type="checkbox"> G検定に合格する</li>
-  </ul>
+  <header class="site-header">
+    <div class="container">
+      <h1 class="title">🎯 Bucket List</h1>
+      <p class="subtitle">人生でやりたいことを記録し、達成の瞬間を残す。</p>
+      <nav class="site-nav">
+        <a href="#travel">旅行・冒険</a>
+        <a href="#learning">学習・スキル</a>
+        <a href="#life">健康・ライフスタイル</a>
+        <a href="#hobby">趣味・体験</a>
+        <a href="#mind">精神・教養</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- 進捗サマリー（JSなし版：手動で数字を更新） -->
+    <section class="card">
+      <h2>進捗サマリー</h2>
+      <ul class="meta">
+        <li>全体：<strong>0 / 12</strong>（<strong>0%</strong>）</li>
+        <li>最近の達成：—</li>
+        <li>最終更新：2025-08-31</li>
+      </ul>
+    </section>
+
+    <!-- カテゴリごとのカード（必要に応じて項目を増やす） -->
+    <section id="travel" class="card">
+      <h2>🗺 旅行・冒険</h2>
+      <ul class="checklist">
+        <li><label><input type="checkbox" /> 南極に行く</label></li>
+        <li><label><input type="checkbox" /> 小笠原で星空キャンプ</label></li>
+        <li><label><input type="checkbox" /> 韓国でポーカートーナメント参加</label></li>
+      </ul>
+    </section>
+
+    <section id="learning" class="card">
+      <h2>📚 学習・スキル</h2>
+      <ul class="checklist">
+        <li><label><input type="checkbox" /> G検定に合格する</label></li>
+        <li><label><input type="checkbox" /> E資格に合格する</label></li>
+        <li><label><input type="checkbox" /> Webアプリを公開する</label></li>
+      </ul>
+    </section>
+
+    <section id="life" class="card">
+      <h2>🏃 健康・ライフスタイル</h2>
+      <ul class="checklist">
+        <li><label><input type="checkbox" /> 体重60kgを達成する</label></li>
+        <li><label><input type="checkbox" /> 週2回ジムに通う</label></li>
+      </ul>
+    </section>
+
+    <section id="hobby" class="card">
+      <h2>🎨 趣味・体験</h2>
+      <ul class="checklist">
+        <li><label><input type="checkbox" /> 星空の下で焚き火料理</label></li>
+        <li><label><input type="checkbox" /> Columbiaのキャンプウェアを揃える</label></li>
+      </ul>
+    </section>
+
+    <section id="mind" class="card">
+      <h2>🌱 精神・教養</h2>
+      <ul class="checklist">
+        <li><label><input type="checkbox" /> フランス革命を体系的に学ぶ</label></li>
+        <li><label><input type="checkbox" /> 一冊に没頭する読書時間を作る</label></li>
+      </ul>
+    </section>
+
+    <section class="card note">
+      <h2>📅 進捗メモ</h2>
+      <ul class="timeline">
+        <li><time>2025-08-31</time> サイト初版を公開</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>© 2025 Your Name</small>
+    </div>
+  </footer>
 </body>
 </html>
