@@ -1,0 +1,81 @@
+/* ====== ベース設定 ====== */
+:root{
+  --bg: #0b1016;           /* 背景 */
+  --card: #0f1720;         /* カード背景 */
+  --text: #e5eef7;         /* 文字色 */
+  --muted: #9fb2c6;        /* 補助文字 */
+  --brand: #0ea5e9;        /* アクセント */
+  --brand-weak: #7dd3fc;
+  --radius: 16px;
+  --container: 900px;
+}
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f8fafc; --card:#ffffff; --text:#0f172a; --muted:#475569;
+    --brand:#0284c7; --brand-weak:#38bdf8;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+  line-height:1.8;
+  color:var(--text);
+  background:radial-gradient(1200px 600px at 50% -10%, rgba(14,165,233,.18), transparent 60%) , var(--bg);
+}
+
+/* ====== レイアウト ====== */
+.container{max-width:var(--container); margin-inline:auto; padding:24px}
+.site-header{
+  border-bottom:1px solid rgba(255,255,255,.08);
+  background:linear-gradient(180deg, rgba(14,165,233,.08), transparent);
+}
+.title{margin:0 0 8px; font-size:clamp(28px, 4vw, 40px)}
+.subtitle{margin:0 0 16px; color:var(--muted)}
+.site-nav{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:8px}
+.site-nav a{
+  color:var(--brand-weak); text-decoration:none; padding:6px 10px;
+  border:1px solid rgba(255,255,255,.1); border-radius:999px;
+}
+.site-nav a:hover{background:rgba(255,255,255,.06)}
+
+.card{
+  background:var(--card);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--radius);
+  padding:20px 20px 14px;
+  margin:16px 0;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+}
+.card h2{margin-top:0; letter-spacing:.2px}
+
+/* ====== メタ情報 ====== */
+.meta{list-style:none; padding:0; margin:0}
+.meta li{color:var(--muted)}
+
+/* ====== チェックリスト ====== */
+.checklist{list-style:none; padding:0; margin:0}
+.checklist li{
+  display:flex; align-items:flex-start; gap:10px;
+  padding:10px 12px; border-radius:12px;
+  border:1px solid rgba(255,255,255,.06);
+  margin-bottom:10px;
+  background:linear-gradient(180deg, rgba(255,255,255,.02), transparent);
+}
+.checklist input[type="checkbox"]{
+  width:20px; height:20px; margin-top:2px; accent-color:var(--brand);
+}
+.checklist input[type="checkbox"]:checked + *{
+  text-decoration:line-through; color:var(--muted);
+}
+
+/* ====== タイムライン ====== */
+.timeline{list-style:none; padding:0; margin:0}
+.timeline li{padding:8px 0; border-bottom:1px dashed rgba(255,255,255,.1)}
+.timeline time{color:var(--muted); font-variant-numeric: tabular-nums}
+
+/* ====== フッター ====== */
+.site-footer{
+  border-top:1px solid rgba(255,255,255,.08);
+  color:var(--muted);
+}
