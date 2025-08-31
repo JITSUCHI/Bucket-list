@@ -3,89 +3,92 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bucket List｜あなたの名前</title>
-  <meta name="description" content="人生でやりたいことをカテゴリ別に整理し、進捗を記録するバケットリスト。" />
-  <link rel="stylesheet" href="./style.css?v=5" />
+  <title>My Bucket List</title>
+  <link rel="stylesheet" href="./style.css?v=11" />
 </head>
 <body>
-  <header class="site-header">
-    <div class="container">
-      <h1 class="title">🎯 Bucket List</h1>
-      <p class="subtitle">人生でやりたいことを記録し、達成の瞬間を残す。</p>
-      <nav class="site-nav">
-        <a href="#travel">旅行・冒険</a>
-        <a href="#learning">学習・スキル</a>
-        <a href="#life">健康・ライフスタイル</a>
-        <a href="#hobby">趣味・体験</a>
-        <a href="#mind">精神・教養</a>
-      </nav>
-    </div>
-  </header>
+  <div class="paper">
+    <div class="sheet">
+      <header class="sheet__header">
+        <h1>My Bucket List</h1>
+        <p class="legend">
+          <span class="legend__red">赤色:達成済</span>、
+          <span class="legend__blue">青色:進捗あり</span>、
+          <span class="legend__green">緑色:継続中</span>
+        </p>
+        <p class="updated">（最終更新日: 2025年9月2日）</p>
+      </header>
 
-  <main class="container">
-    <section class="card">
-      <h2>進捗サマリー</h2>
-      <ul class="meta">
-        <li>全体：<strong>0 / 12</strong>（<strong>0%</strong>）</li>
-        <li>最近の達成：—</li>
-        <li>最終更新：2025-08-31</li>
-      </ul>
-    </section>
+      <!-- 旅行・冒険 -->
+      <details open class="blk">
+        <summary><span>🗺 旅行・冒険</span></summary>
+        <ol class="items">
+          <li>南極に行く</li>
+          <li>小笠原で星空キャンプ</li>
+          <li>韓国でポーカートーナメントに参加する</li>
+          <li>○○に登山する</li>
+        </ol>
+      </details>
 
-    <section id="travel" class="card">
-      <h2>🗺 旅行・冒険</h2>
-      <ul class="checklist">
-        <li><label><input type="checkbox" /> 南極に行く</label></li>
-        <li><label><input type="checkbox" /> 小笠原で星空キャンプ</label></li>
-        <li><label><input type="checkbox" /> 韓国でポーカートーナメント参加</label></li>
-      </ul>
-    </section>
+      <!-- 学習・スキル -->
+      <details class="blk">
+        <summary><span>📚 学習・スキル</span></summary>
+        <ol class="items">
+          <li>G検定に合格する</li>
+          <li>E資格に合格する</li>
+          <li>AWS資格を取得する</li>
+          <li>Webアプリを公開する</li>
+        </ol>
+      </details>
 
-    <section id="learning" class="card">
-      <h2>📚 学習・スキル</h2>
-      <ul class="checklist">
-        <li><label><input type="checkbox" /> G検定に合格する</label></li>
-        <li><label><input type="checkbox" /> E資格に合格する</label></li>
-        <li><label><input type="checkbox" /> Webアプリを公開する</label></li>
-      </ul>
-    </section>
+      <!-- キャリア・お金 -->
+      <details class="blk">
+        <summary><span>💼 キャリア・お金</span></summary>
+        <ol class="items">
+          <li>個人開発で月◯万円の収益を得る</li>
+          <li>投資で資産◯◯万円を築く</li>
+        </ol>
+      </details>
 
-    <section id="life" class="card">
-      <h2>🏃 健康・ライフスタイル</h2>
-      <ul class="checklist">
-        <li><label><input type="checkbox" /> 体重60kgを達成する</label></li>
-        <li><label><input type="checkbox" /> 週2回ジムに通う</label></li>
-      </ul>
-    </section>
+      <!-- 健康・ライフスタイル -->
+      <details class="blk">
+        <summary><span>🏃 健康・ライフスタイル</span></summary>
+        <ol class="items">
+          <li>体重60kgを達成する</li>
+          <li>週2回ジムに通う</li>
+          <li>キャンプ飯を自分で作る</li>
+        </ol>
+      </details>
 
-    <section id="hobby" class="card">
-      <h2>🎨 趣味・体験</h2>
-      <ul class="checklist">
-        <li><label><input type="checkbox" /> 星空の下で焚き火料理</label></li>
-        <li><label><input type="checkbox" /> Columbiaのキャンプウェアを揃える</label></li>
-      </ul>
-    </section>
+      <!-- 趣味・体験 -->
+      <details class="blk">
+        <summary><span>🎨 趣味・体験</span></summary>
+        <ol class="items">
+          <li>Columbiaのキャンプウェアを揃える</li>
+          <li>星空の下で焚き火をする</li>
+          <li>ダンダダンを全巻読む</li>
+        </ol>
+      </details>
 
-    <section id="mind" class="card">
-      <h2>🌱 精神・教養</h2>
-      <ul class="checklist">
-        <li><label><input type="checkbox" /> フランス革命を体系的に学ぶ</label></li>
-        <li><label><input type="checkbox" /> 一冊に没頭する読書時間を作る</label></li>
-      </ul>
-    </section>
+      <!-- 精神・教養 -->
+      <details class="blk">
+        <summary><span>🌱 精神・教養</span></summary>
+        <ol class="items">
+          <li>フランス革命を体系的に学ぶ</li>
+          <li>一冊に没頭する読書時間を作る</li>
+          <li>○○の映画を観る</li>
+        </ol>
+      </details>
 
-    <section class="card note">
-      <h2>📅 進捗メモ</h2>
-      <ul class="timeline">
-        <li><time>2025-08-31</time> サイト初版を公開</li>
-      </ul>
-    </section>
-  </main>
+      <!-- 進捗メモ -->
+      <details class="blk">
+        <summary><span>📅 進捗メモ</span></summary>
+        <ol class="items">
+          <li>2025-08-31：サイト初版を公開</li>
+        </ol>
+      </details>
 
-  <footer class="site-footer">
-    <div class="container">
-      <small>© 2025 Your Name</small>
-    </div>
-  </footer>
+    </div><!-- .sheet -->
+  </div><!-- .paper -->
 </body>
 </html>
