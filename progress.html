@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>実施状況 - My Bucket List</title>
+  <link rel="stylesheet" href="./style.css?v=1" />
+  <style>
+    .section{margin:20px 0}
+    .section h2{margin-bottom:8px}
+    .items li{margin:6px 0}
+  </style>
+</head>
+<body>
+  <div class="paper">
+    <div class="sheet">
+      <header class="sheet__header">
+        <h1>実施状況一覧</h1>
+        <p class="muted">※ index.html と同じ localStorage のデータを参照しています。</p>
+        <nav><a href="index.html">← Bucket List に戻る</a></nav>
+      </header>
+
+      <div id="progress"></div>
+    </div>
+  </div>
+
+  <script>
+  const KEY="bucketlist_v4"; // index.html と同じキーを使用
+
+  const statusClass={done:"done red",progress:"blue",ongoing:"green",todo:""};
+
+  const data=JSON.parse(localStorage.getItem(KEY)||"{}");
+
+  function groupByTarget(){
+    const groups={month:[],year:[],five:[],ten:[],other:[]};
+    if(!data.categories) return groups;
+    data.categories.forEach(cat=>{
+      cat.items.forEach(it=>{
+        switch(it.target){
+          case "month": groups.month.push(it); break;
+          case "year": groups.year.push(it); break;
+          case "5year": groups.five.push(it); break;
+          case "10year": groups.ten.push(it); break;
+          default: groups.other.push(it);
+        }
+      });
+    });
+    return groups;
+  }
+
+  function render(){
+    const box=document.getElementById("progress");
+    box.innerHTML="";
+    const groups=groupByTarget();
+    const sections=[
+      ["今月中に実施",groups.month],
+      ["今年中に実施",groups.year],
+      ["5年以内に実施",groups.five],
+      ["10年以内に実施",groups.ten],
+      ["未分類/いつか",groups.other]
+    ];
+    sections.forEach(([title,list])=>{
+      const div=document.createElement("div");
+      div.className="section";
+      div.innerHTML=`<h2>${title}</h2>`;
+      const ol=document.createElement("ol");
+      ol.className="items";
+      list.forEach((it,i)=>{
+        const li=document.createElement("li");
+        li.textContent=`${it.text}`;
+        if(it.status){
+          li.className=statusClass[it.status]||"";
+        }
+        ol.appendChild(li);
+      });
+      if(list.length===0) ol.innerHTML="<li class='muted'>なし</li>";
+      div.appendChild(ol);
+      box.appendChild(div);
+    });
+  }
+  render();
+  </script>
+</body>
+</html>
