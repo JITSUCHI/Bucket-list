@@ -47,44 +47,61 @@
 
   <script>
   const KEY = "bucketlist_v4";
-  const initialData = {
-    updatedAt: new Date().toISOString(),
-    categories: [
-      { id:"travel", title:"🗺 旅行・冒険", items:[
-        { text:"南極に行く", status:"todo" },
-        { text:"小笠原で星空キャンプ", status:"todo" },
-        { text:"韓国でポーカートーナメントに参加する", status:"todo" },
-      ]},
-      { id:"learn", title:"📚 学習・スキル", items:[
-        { text:"G検定に合格する", status:"todo" },
-        { text:"E資格に合格する", status:"todo" },
-        { text:"AWS資格を取得する", status:"todo" },
-        { text:"Webアプリを公開する", status:"todo" },
-      ]},
-      { id:"career", title:"💼 キャリア・お金", items:[
-        { text:"個人開発で月◯万円の収益を得る", status:"todo" },
-        { text:"投資で資産◯◯万円を築く", status:"todo" },
-      ]},
-      { id:"life", title:"🏃 健康・ライフスタイル", items:[
-        { text:"体重60kgを達成する", status:"todo" },
-        { text:"週2回ジムに通う", status:"todo" },
-        { text:"キャンプ飯を自分で作る", status:"todo" },
-      ]},
-      { id:"hobby", title:"🎨 趣味・体験", items:[
-        { text:"Columbiaのキャンプウェアを揃える", status:"todo" },
-        { text:"星空の下で焚き火をする", status:"todo" },
-        { text:"ダンダダンを全巻読む", status:"todo" },
-      ]},
-      { id:"mind", title:"🌱 精神・教養", items:[
-        { text:"フランス革命を体系的に学ぶ", status:"todo" },
-        { text:"一冊に没頭する読書時間を作る", status:"todo" },
-        { text:"○○の映画を観る", status:"todo" },
-      ]},
-      { id:"log", title:"📅 進捗メモ", items:[
-        { text:"2025-08-31：サイト初版を公開", status:"progress" }
-      ]},
-    ]
-  };
+ const initialData = {
+  updatedAt: new Date().toISOString(),
+  categories: [
+    { id:"travel", title:"🗺 旅行・冒険", items:[
+      { text:"家族で石垣島に行きたい！", status:"todo" },
+      { text:"高校の友達とギャンブル旅行に行きたい！", status:"todo" },
+    ]},
+    { id:"learn", title:"📚 学習・スキル", items:[
+      { text:"G検定に合格する。", status:"todo" },
+      { text:"E資格に合格する。", status:"todo" },
+      { text:"JavaSilverに合格する。", status:"todo" },
+      { text:"応用情報技術者試験に合格する。", status:"todo" },
+    ]},
+    { id:"career", title:"💼 キャリア・お金", items:[
+      { text:"結婚したい", status:"todo" },
+      { text:"子供を作り子孫を残したい", status:"todo" },
+      { text:"岡山の稼働を無事に迎える", status:"todo" },
+      { text:"年収1000万の世界を見てみたい（エリートって感じがする）", status:"todo" },
+      { text:"手段は問わないから個人で収益が得られるようになりたい", status:"todo" },
+      { text:"総資産1000万超えたい", status:"todo" },
+      { text:"総資産5000万超えたい", status:"todo" },
+      { text:"総資産1億超えたい。", status:"todo" },
+      { text:"株式投資の年利益10%を超える（毎年）", status:"todo" },
+    ]},
+    { id:"life", title:"🏃 健康・ライフスタイル", items:[
+      { text:"体重60kg台の景色を見てみたい。", status:"todo" },
+      { text:"眉毛サロンデビューする。", status:"todo" },
+    ]},
+    { id:"hobby", title:"🎨 趣味・体験", items:[
+      { text:"海外トナメ（Porker）でインマネしてみたい！", status:"todo" },
+      { text:"ラスベガスで旅行代をかけたギャンブルがしたい！", status:"todo" },
+      { text:"アミューズメントカジノのトナメで優勝したい！", status:"todo" },
+      { text:"阿智村で日本一の星空を堪能したい！", status:"todo" },
+      { text:"富士山のふもとでキャンプがしたい！", status:"todo" },
+      { text:"キャンプで腰が抜けるほどおいしいごはんを食べたい。", status:"todo" },
+      { text:"自分で釣った魚を焼いて食べてみたい。", status:"todo" },
+      { text:"一人キャンプをやってみたい。", status:"todo" },
+      { text:"「真夏の果実」をピアノで弾けるようになりたい。", status:"todo" },
+      { text:"ヨーロッパ旅行に行ってみたい！", status:"todo" },
+      { text:"世界で一番発展している場所に行ってみたい（アメリカ）", status:"todo" },
+      { text:"6大陸制覇したい！", status:"todo" },
+      { text:"たこ焼きの正解をたたき出したい！", status:"todo" },
+      { text:"小笠原諸島に行ってみたい！", status:"todo" },
+      { text:"グランドキャニオンに行って自然の壮大さを感じたい。", status:"todo" },
+      { text:"ドレーク海峡を乗り越えたい。そしてその先の南極大陸へ、、", status:"todo" },
+      { text:"地球が丸いことをこの目で確認したい", status:"todo" },
+      { text:"富士山に登りたい（済）", status:"done" },
+      { text:"家族で石垣島に行きたい！（重複）", status:"todo" },
+      { text:"高校の友達とギャンブル旅行に行きたい！（重複）", status:"todo" },
+    ]},
+    { id:"mind", title:"🌱 精神・教養", items:[
+      // 今はまだ空。必要ならここに追加してください！
+    ]},
+  ]
+};
 
   const statusClass = { done:"done red", progress:"blue", ongoing:"green", todo:"" };
 
@@ -193,3 +210,4 @@
   </script>
 </body>
 </html>
+
