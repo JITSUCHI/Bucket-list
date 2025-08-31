@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My Bucket List（編集可）</title>
-  <link rel="stylesheet" href="./style.css?v=20" />
+  <title>My Bucket List（編集可・自動連番）</title>
+  <link rel="stylesheet" href="./style.css?v=21" />
   <style>
-    /* 既存の便箋CSSに足す軽いUI用 */
+    /* 既存CSS + 最低限のUI追加 */
     .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin:8px 0 16px}
     .btn{border:1px solid #222;background:#fff;border-radius:6px;padding:6px 10px;cursor:pointer}
     .btn:hover{filter:brightness(0.98)}
@@ -26,263 +26,127 @@
       <header class="sheet__header">
         <h1>My Bucket List</h1>
         <p class="legend">
-          <span class="legend__red">赤色:達成（取り消し線）</span>、
+          <span class="legend__red">赤色:達成</span>、
           <span class="legend__blue">青色:進捗あり</span>、
           <span class="legend__green">緑色:継続中</span>
         </p>
         <p class="updated" id="updated">（最終更新日: —）</p>
-        <div class="toolbar">
-          <button class="btn" id="exportBtn">JSONエクスポート</button>
-          <label class="btn" style="position:relative;overflow:hidden">
-            JSONインポート
-            <input id="importInput" type="file" accept="application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer">
-          </label>
-          <button class="btn" id="resetBtn" title="初期データに戻す">初期化</button>
-        </div>
       </header>
-
-      <!-- カテゴリはJSで描画。下の noscript は念のための代替表示 -->
-      <noscript>
-        <details class="blk" open><summary>このページはJavaScriptが必要です</summary>
-          <ol class="items"><li>ブラウザでJavaScriptを有効にしてください。</li></ol>
-        </details>
-      </noscript>
 
       <div id="app"></div>
 
-      <p class="muted">※ この版はブラウザの <strong>localStorage</strong> に保存します（端末・ブラウザごとに別）。共有したい場合は下の「将来の拡張」を参照。</p>
+      <p class="muted">※ この版は localStorage に保存します。別端末では JSONエクスポート／インポートを使ってください。</p>
     </div>
   </div>
 
   <script>
-  // ====== データモデル ======
-  const KEY = "bucketlist_v1";
+  // ====== データ ======
+  const KEY = "bucketlist_v2";
   const initialData = {
     updatedAt: new Date().toISOString(),
     categories: [
-      { id:"travel",  title:"🗺 旅行・冒険", items:[
+      { id:"travel", title:"🗺 旅行・冒険", items:[
         { text:"南極に行く", status:"todo" },
         { text:"小笠原で星空キャンプ", status:"todo" },
         { text:"韓国でポーカートーナメントに参加する", status:"todo" },
-        { text:"○○に登山する", status:"todo" },
       ]},
-      { id:"learn",   title:"📚 学習・スキル", items:[
+      { id:"learn", title:"📚 学習・スキル", items:[
         { text:"G検定に合格する", status:"todo" },
         { text:"E資格に合格する", status:"todo" },
         { text:"AWS資格を取得する", status:"todo" },
-        { text:"Webアプリを公開する", status:"todo" },
       ]},
-      { id:"career",  title:"💼 キャリア・お金", items:[
-        { text:"個人開発で月◯万円の収益を得る", status:"todo" },
-        { text:"投資で資産◯◯万円を築く", status:"todo" },
-      ]},
-      { id:"life",    title:"🏃 健康・ライフスタイル", items:[
+      { id:"life", title:"🏃 健康・ライフスタイル", items:[
         { text:"体重60kgを達成する", status:"todo" },
         { text:"週2回ジムに通う", status:"todo" },
-        { text:"キャンプ飯を自分で作る", status:"todo" },
-      ]},
-      { id:"hobby",   title:"🎨 趣味・体験", items:[
-        { text:"Columbiaのキャンプウェアを揃える", status:"todo" },
-        { text:"星空の下で焚き火をする", status:"todo" },
-        { text:"ダンダダンを全巻読む", status:"todo" },
-      ]},
-      { id:"mind",    title:"🌱 精神・教養", items:[
-        { text:"フランス革命を体系的に学ぶ", status:"todo" },
-        { text:"一冊に没頭する読書時間を作る", status:"todo" },
-        { text:"○○の映画を観る", status:"todo" },
-      ]},
-      { id:"log",     title:"📅 進捗メモ", items:[
-        { text:"2025-08-31：サイト初版を公開", status:"progress" }
       ]},
     ]
   };
 
-  // 状態→クラス
   const statusClass = {
-    done:   "done red",
-    progress: "blue",
-    ongoing:  "green",
-    todo:   ""
+    done:"done red", progress:"blue", ongoing:"green", todo:""
   };
 
-  // ====== ストレージ ======
-  const load = () => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (!raw) return structuredClone(initialData);
-      const parsed = JSON.parse(raw);
-      // 古い構造との互換
-      if (!parsed.categories) parsed.categories = structuredClone(initialData.categories);
-      return parsed;
-    } catch(e) {
-      console.warn("load failed", e);
-      return structuredClone(initialData);
-    }
-  };
-  const save = (data) => {
-    data.updatedAt = new Date().toISOString();
-    localStorage.setItem(KEY, JSON.stringify(data));
-    document.getElementById("updated").textContent =
-      `（最終更新日: ${new Date(data.updatedAt).toLocaleString()}）`;
+  const load = ()=>JSON.parse(localStorage.getItem(KEY)||"null")||structuredClone(initialData);
+  const save = (d)=>{d.updatedAt=new Date().toISOString();localStorage.setItem(KEY,JSON.stringify(d));
+    document.getElementById("updated").textContent=`（最終更新日: ${new Date(d.updatedAt).toLocaleString()}）`;
   };
 
   let state = load();
 
-  // ====== 描画 ======
-  const el = (tag, attrs={}, ...children) => {
-    const node = document.createElement(tag);
-    Object.entries(attrs).forEach(([k,v])=>{
-      if (k === "class") node.className = v;
-      else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
-      else if (v !== null && v !== undefined) node.setAttribute(k, v);
-    });
-    children.forEach(c => node.append(c instanceof Node ? c : document.createTextNode(c)));
-    return node;
+  // ====== DOM util ======
+  const el=(tag,attrs={},...chs)=>{
+    const n=document.createElement(tag);
+    for(const[k,v] of Object.entries(attrs)){
+      if(k==="class") n.className=v;
+      else if(k.startsWith("on")) n.addEventListener(k.slice(2),v);
+      else n.setAttribute(k,v);
+    }
+    chs.forEach(c=>n.append(c instanceof Node?c:document.createTextNode(c)));
+    return n;
   };
 
+  // ====== Render ======
   function render(){
-    const app = document.getElementById("app");
-    app.innerHTML = "";
+    const app=document.getElementById("app"); app.innerHTML="";
+    let counter=1; // 通し番号
     state.categories.forEach(cat=>{
-      const details = el("details", {class:"blk", open:true});
-      const summary = el("summary", {}, el("span", {}, cat.title));
-      details.append(summary);
+      const details=el("details",{class:"blk",open:true});
+      details.append(el("summary",{},el("span",{},cat.title)));
 
-      // 追加行
-      const addRow = el("div", {class:"row"},
-        el("input", {type:"text", placeholder:"項目を追加…", id:`add-${cat.id}`}),
-        el("select", {id:`sel-${cat.id}`},
-          el("option", {value:"todo"}, "未"),
-          el("option", {value:"progress"}, "進捗"),
-          el("option", {value:"ongoing"}, "継続"),
-          el("option", {value:"done"}, "達成"),
-        ),
-        el("button", {class:"btn", onclick:()=>addItem(cat.id)}, "追加")
-      );
-      details.append(addRow);
-
-      // リスト本体
-      const ol = el("ol", {class:"items", id:`ol-${cat.id}`});
-      cat.items.forEach((item, idx)=>{
-        ol.append(renderItem(cat.id, idx, item));
+      const ol=el("ol",{class:"items"});
+      cat.items.forEach((item,idx)=>{
+        ol.append(renderItem(cat.id,idx,item,counter));
+        counter++;
       });
       details.append(ol);
       app.append(details);
     });
-    // 更新日
-    document.getElementById("updated").textContent =
-      `（最終更新日: ${new Date(state.updatedAt).toLocaleString()}）`;
+    save(state);
   }
 
-  function renderItem(catId, idx, item){
-    const li = el("li");
-    const span = el("span", {class:`editable ${statusClass[item.status]||""}`, contenteditable:"false"});
-    span.textContent = item.text;
+  function renderItem(catId, idx, item, no){
+    const li=el("li");
+    const span=el("span",{class:`editable ${statusClass[item.status]||""}`,contenteditable:"false"});
+    span.textContent=`${no}. ${item.text}`;
 
-    // 状態セレクト
-    const sel = el("select", {title:"状態", onchange:(e)=>{
-      item.status = e.target.value;
-      span.className = `editable ${statusClass[item.status]||""}`;
+    const sel=el("select",{onchange:e=>{
+      item.status=e.target.value;
+      span.className=`editable ${statusClass[item.status]||""}`;
       save(state);
+      render();
     }},
-      el("option", {value:"todo",    selected:item.status==="todo"}, "未"),
-      el("option", {value:"progress",selected:item.status==="progress"}, "進捗"),
-      el("option", {value:"ongoing", selected:item.status==="ongoing"}, "継続"),
-      el("option", {value:"done",    selected:item.status==="done"}, "達成"),
+      el("option",{value:"todo",selected:item.status==="todo"},"未"),
+      el("option",{value:"progress",selected:item.status==="progress"},"進捗"),
+      el("option",{value:"ongoing",selected:item.status==="ongoing"},"継続"),
+      el("option",{value:"done",selected:item.status==="done"},"達成"),
     );
 
-    // ボタン群
-    const actions = el("span", {class:"item-actions"},
-      el("button", {title:"編集/確定", onclick:()=>{
-        const editing = span.getAttribute("contenteditable")==="true";
-        if (editing){
-          span.setAttribute("contenteditable","false");
-          item.text = span.textContent.trim();
-          save(state);
-        }else{
-          span.setAttribute("contenteditable","true");
-          span.focus();
-          // キャレットを末尾へ
-          document.getSelection().selectAllChildren(span);
-          document.getSelection().collapseToEnd();
-        }
-      }}, "✎"),
-      el("button", {title:"上へ", onclick:()=>moveItem(catId, idx, -1)}, "↑"),
-      el("button", {title:"下へ", onclick:()=>moveItem(catId, idx, +1)}, "↓"),
-      el("button", {title:"削除", onclick:()=>deleteItem(catId, idx)}, "🗑")
+    const actions=el("span",{class:"item-actions"},
+      el("button",{onclick:()=>{
+        const ed=span.getAttribute("contenteditable")==="true";
+        if(ed){span.setAttribute("contenteditable","false"); item.text=span.textContent.replace(/^\d+\.\s*/,"").trim(); save(state);}
+        else{span.setAttribute("contenteditable","true");span.focus();}
+      }},"✎"),
+      el("button",{onclick:()=>{moveItem(catId,idx,-1)}}, "↑"),
+      el("button",{onclick:()=>{moveItem(catId,idx,1)}}, "↓"),
+      el("button",{onclick:()=>{deleteItem(catId,idx)}}, "🗑"),
     );
 
-    li.append(span, " ", sel, actions);
+    li.append(span," ",sel,actions);
     return li;
   }
 
-  // ====== CRUD ======
-  function addItem(catId){
-    const input = document.getElementById(`add-${catId}`);
-    const sel   = document.getElementById(`sel-${catId}`);
-    const text = (input.value||"").trim();
-    if (!text) return;
-    const cat = state.categories.find(c=>c.id===catId);
-    cat.items.push({text, status: sel.value});
-    input.value = "";
-    save(state);
-    render();
+  // ====== 操作 ======
+  function deleteItem(catId,idx){
+    const cat=state.categories.find(c=>c.id===catId);
+    cat.items.splice(idx,1); render();
+  }
+  function moveItem(catId,idx,d){
+    const cat=state.categories.find(c=>c.id===catId);
+    const j=idx+d; if(j<0||j>=cat.items.length)return;
+    const [it]=cat.items.splice(idx,1); cat.items.splice(j,0,it); render();
   }
 
-  function deleteItem(catId, idx){
-    const cat = state.categories.find(c=>c.id===catId);
-    cat.items.splice(idx,1);
-    save(state);
-    render();
-  }
-
-  function moveItem(catId, idx, delta){
-    const cat = state.categories.find(c=>c.id===catId);
-    const j = idx + delta;
-    if (j<0 || j>=cat.items.length) return;
-    const [it] = cat.items.splice(idx,1);
-    cat.items.splice(j,0,it);
-    save(state);
-    render();
-  }
-
-  // ====== Export / Import / Reset ======
-  document.getElementById("exportBtn").addEventListener("click", ()=>{
-    const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "bucketlist.json";
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
-
-  document.getElementById("importInput").addEventListener("change", async (e)=>{
-    const file = e.target.files[0];
-    if(!file) return;
-    try{
-      const txt = await file.text();
-      const data = JSON.parse(txt);
-      if (!data.categories) throw new Error("Invalid JSON");
-      state = data;
-      save(state);
-      render();
-    }catch(err){
-      alert("JSONの読み込みに失敗しました");
-      console.error(err);
-    }finally{
-      e.target.value = "";
-    }
-  });
-
-  document.getElementById("resetBtn").addEventListener("click", ()=>{
-    if (confirm("初期状態に戻しますか？（元に戻せません）")){
-      state = structuredClone(initialData);
-      save(state);
-      render();
-    }
-  });
-
-  // 初期描画
   render();
   </script>
 </body>
