@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My Bucket List（編集可・自動連番）</title>
-  <link rel="stylesheet" href="./style.css?v=21" />
+  <title>My Bucket List（編集可・自動連番・追加対応）</title>
+  <link rel="stylesheet" href="./style.css?v=22" />
   <style>
-    /* 既存CSS + 最低限のUI追加 */
     .toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin:8px 0 16px}
     .btn{border:1px solid #222;background:#fff;border-radius:6px;padding:6px 10px;cursor:pointer}
     .btn:hover{filter:brightness(0.98)}
@@ -41,23 +40,17 @@
 
   <script>
   // ====== データ ======
-  const KEY = "bucketlist_v2";
+  const KEY = "bucketlist_v3";
   const initialData = {
     updatedAt: new Date().toISOString(),
     categories: [
       { id:"travel", title:"🗺 旅行・冒険", items:[
         { text:"南極に行く", status:"todo" },
         { text:"小笠原で星空キャンプ", status:"todo" },
-        { text:"韓国でポーカートーナメントに参加する", status:"todo" },
       ]},
       { id:"learn", title:"📚 学習・スキル", items:[
         { text:"G検定に合格する", status:"todo" },
         { text:"E資格に合格する", status:"todo" },
-        { text:"AWS資格を取得する", status:"todo" },
-      ]},
-      { id:"life", title:"🏃 健康・ライフスタイル", items:[
-        { text:"体重60kgを達成する", status:"todo" },
-        { text:"週2回ジムに通う", status:"todo" },
       ]},
     ]
   };
@@ -73,7 +66,6 @@
 
   let state = load();
 
-  // ====== DOM util ======
   const el=(tag,attrs={},...chs)=>{
     const n=document.createElement(tag);
     for(const[k,v] of Object.entries(attrs)){
@@ -88,10 +80,24 @@
   // ====== Render ======
   function render(){
     const app=document.getElementById("app"); app.innerHTML="";
-    let counter=1; // 通し番号
+    let counter=1;
+
     state.categories.forEach(cat=>{
       const details=el("details",{class:"blk",open:true});
       details.append(el("summary",{},el("span",{},cat.title)));
+
+      // 追加UI
+      const addRow = el("div",{class:"row"},
+        el("input",{type:"text",placeholder:"項目を追加…",id:`add-${cat.id}`}),
+        el("select",{id:`sel-${cat.id}`},
+          el("option",{value:"todo"},"未"),
+          el("option",{value:"progress"},"進捗"),
+          el("option",{value:"ongoing"},"継続"),
+          el("option",{value:"done"},"達成"),
+        ),
+        el("button",{class:"btn",onclick:()=>addItem(cat.id)},"追加")
+      );
+      details.append(addRow);
 
       const ol=el("ol",{class:"items"});
       cat.items.forEach((item,idx)=>{
@@ -112,8 +118,7 @@
     const sel=el("select",{onchange:e=>{
       item.status=e.target.value;
       span.className=`editable ${statusClass[item.status]||""}`;
-      save(state);
-      render();
+      save(state); render();
     }},
       el("option",{value:"todo",selected:item.status==="todo"},"未"),
       el("option",{value:"progress",selected:item.status==="progress"},"進捗"),
@@ -127,9 +132,9 @@
         if(ed){span.setAttribute("contenteditable","false"); item.text=span.textContent.replace(/^\d+\.\s*/,"").trim(); save(state);}
         else{span.setAttribute("contenteditable","true");span.focus();}
       }},"✎"),
-      el("button",{onclick:()=>{moveItem(catId,idx,-1)}}, "↑"),
-      el("button",{onclick:()=>{moveItem(catId,idx,1)}}, "↓"),
-      el("button",{onclick:()=>{deleteItem(catId,idx)}}, "🗑"),
+      el("button",{onclick:()=>moveItem(catId,idx,-1)},"↑"),
+      el("button",{onclick:()=>moveItem(catId,idx,1)},"↓"),
+      el("button",{onclick:()=>deleteItem(catId,idx)},"🗑"),
     );
 
     li.append(span," ",sel,actions);
@@ -137,6 +142,17 @@
   }
 
   // ====== 操作 ======
+  function addItem(catId){
+    const input=document.getElementById(`add-${catId}`);
+    const sel=document.getElementById(`sel-${catId}`);
+    const text=(input.value||"").trim();
+    if(!text) return;
+    const cat=state.categories.find(c=>c.id===catId);
+    cat.items.push({text,status:sel.value});
+    input.value="";
+    render();
+  }
+
   function deleteItem(catId,idx){
     const cat=state.categories.find(c=>c.id===catId);
     cat.items.splice(idx,1); render();
