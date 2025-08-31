@@ -17,6 +17,8 @@
     .item-actions button:hover{background:#f1f5f9}
     .editable[contenteditable="true"]{outline:2px dashed #60a5fa; outline-offset:2px; background:#eff6ff}
     .muted{color:#666; font-size:12px}
+    nav a{margin-top:8px;display:inline-block;color:#2563eb;text-decoration:none;font-weight:600}
+    nav a:hover{text-decoration:underline}
   </style>
 </head>
 <body>
@@ -30,6 +32,11 @@
           <span class="legend__green">緑色:継続中</span>
         </p>
         <p class="updated" id="updated">（最終更新日: —）</p>
+
+        <!-- 📊 progress.html へのリンクを追加 -->
+        <nav>
+          <a href="progress.html">📊 実施状況を見る</a>
+        </nav>
       </header>
 
       <div id="app"></div>
@@ -39,7 +46,6 @@
   </div>
 
   <script>
-  // ====== データ ======
   const KEY = "bucketlist_v4";
   const initialData = {
     updatedAt: new Date().toISOString(),
@@ -100,7 +106,6 @@
     return n;
   };
 
-  // ====== Render ======
   function render(){
     const app=document.getElementById("app"); app.innerHTML="";
     let counter=1;
@@ -109,7 +114,6 @@
       const details=el("details",{class:"blk",open:true});
       details.append(el("summary",{},el("span",{},cat.title)));
 
-      // 追加UI
       const addRow = el("div",{class:"row"},
         el("input",{type:"text",placeholder:"項目を追加…",id:`add-${cat.id}`}),
         el("select",{id:`sel-${cat.id}`},
@@ -164,7 +168,6 @@
     return li;
   }
 
-  // ====== 操作 ======
   function addItem(catId){
     const input=document.getElementById(`add-${catId}`);
     const sel=document.getElementById(`sel-${catId}`);
