@@ -5,52 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BucketList Progress — 期限別ビュー</title>
   <style>
-    :root{
-      --bg:#0b0d10; --panel:#14181f; --muted:#a6adbb; --text:#e6edf3;
-      --accent:#4f8cff; --ok:#2ecc71; --danger:#ff5d5d; --border:#222833; --card:#0f131a;
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",sans-serif;
+      background:#f4f6f8;
+      color:#333;
     }
-    *{box-sizing:border-box}
-    body{ margin:0; font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI", sans-serif; background:linear-gradient(180deg,var(--bg),#0c1116 40%, #0a1016 100%); color:var(--text);}
-    header{ position:sticky; top:0; z-index:10; backdrop-filter:blur(6px); background:rgba(10,14,20,.7); border-bottom:1px solid var(--border); padding:12px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
-    h1{font-size:18px;margin:0 8px 0 0; font-weight:700; letter-spacing:.2px}
-    a{ color:#9bb7ff; text-decoration:none }
-    .toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-left:auto}
-    .btn{ appearance:none; border:none; background:var(--panel); color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer; border:1px solid var(--border);}
-    .grid{ display:grid; grid-template-columns:1fr; gap:14px; padding:16px; max-width:1200px; margin:0 auto}
-    @media(min-width:1024px){ .grid{ grid-template-columns:1fr 1fr} }
-    .card{ background: linear-gradient(180deg,#0d1117,#0b1016); border:1px solid var(--border); border-radius:16px; padding:14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); min-height: 160px;}
-    .card h2{ font-size:14px; color:var(--muted); margin:0 0 10px; letter-spacing:.2px}
-    .list{ display:flex; flex-direction:column; gap:8px}
-    .item{ display:grid; grid-template-columns: 1fr 160px 160px; gap:8px; align-items:center; background: var(--card); border:1px solid #1a2130; border-radius:12px; padding:8px;}
-    .title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-    .item[data-status="継続"] .title{ color: var(--ok); font-weight:600 }
-    .item[data-status="達成"] .title{ text-decoration: line-through; color:#9fb3c8 }
-    .badge{ font-size:12px; color:#cdd7ea; border:1px solid #334; border-radius:999px; padding:2px 8px; display:inline-block; text-align:center}
-    .filters{ display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px; background:rgba(20,24,31,.4); border-bottom:1px solid var(--border)}
-    .filters label{ display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted) }
-    .filters .group{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
-    .muted{ color:var(--muted); font-size:12px}
+    header{
+      position:sticky;top:0;z-index:10;
+      background:#fff;border-bottom:1px solid #ddd;
+      padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+      box-shadow:0 2px 4px rgba(0,0,0,.05);
+    }
+    h1{font-size:18px;margin:0 8px 0 0;font-weight:700}
+    a{color:#2979ff;text-decoration:none}
+    .btn{appearance:none;border:none;background:#e9ecf2;color:#333;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid #ccc;font-size:14px}
+    main{padding:16px;max-width:860px;margin:0 auto}
+    .grid{display:flex;flex-direction:column;gap:20px}
+    .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
+    .card h2{font-size:15px;color:#555;margin:0 0 12px}
+    .list{display:flex;flex-direction:column;gap:6px}
+    .item{display:flex;gap:8px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:8px;padding:6px}
+    .title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .item[data-status="継続"] .title{color:#2e7d32;font-weight:600}
+    .item[data-status="達成"] .title{text-decoration:line-through;color:#777}
+    .badge{font-size:12px;color:#333;border:1px solid #ccc;border-radius:999px;padding:2px 8px;background:#f9f9f9}
+    .filters{display:flex;flex-wrap:wrap;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid #ddd}
+    .filters label{display:flex;align-items:center;gap:6px;font-size:13px;color:#555}
+    .muted{color:#666;font-size:12px}
   </style>
 </head>
 <body>
   <header>
     <h1>期限別ビュー</h1>
-    <div class="toolbar">
+    <div style="margin-left:auto">
       <a class="btn" href="index.html">← Indexへ戻る</a>
     </div>
   </header>
 
   <section class="filters">
-    <div class="group" id="deadlineFilters">
-      <!-- dynamically filled with deadline checkboxes -->
-    </div>
-    <div class="group">
-      <label><input type="checkbox" id="hideDone"> 達成を非表示</label>
-    </div>
-    <div class="group muted">複数の期限をチェックすると、そのいずれかに当てはまる項目が表示されます。</div>
+    <div id="deadlineFilters" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+    <label><input type="checkbox" id="hideDone"> 達成を非表示</label>
+    <div class="muted">複数チェックすると、そのいずれかに当てはまる項目が表示されます。</div>
   </section>
 
-  <main class="grid" id="deadlineGrids"></main>
+  <main>
+    <div class="grid" id="deadlineGrids"></div>
+  </main>
 
   <template id="deadlineCardTmpl">
     <section class="card">
@@ -68,100 +69,80 @@
   </template>
 
   <script>
-    // shared constants (match index.html)
-    const GENRES = ["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
-    const STATUSES = ["未着手","継続","達成"];
-    const DEADLINES = ["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
-    const LS_KEY = "bucketlist.v2";
+    const GENRES=["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
+    const STATUSES=["未着手","継続","達成"];
+    const DEADLINES=["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
+    const LS_KEY="bucketlist.v2";
 
-    /** @type {Record<string, {id:string,title:string,status:string,deadline:string}[]>} */
-    let state = loadState();
-
+    let state=loadState();
     function loadState(){
       try{
-        const raw = localStorage.getItem(LS_KEY);
-        if(!raw){ return Object.fromEntries(GENRES.map(g=>[g,[]])); }
-        const obj = JSON.parse(raw);
+        const raw=localStorage.getItem(LS_KEY); if(!raw) return Object.fromEntries(GENRES.map(g=>[g,[]]));
+        const obj=JSON.parse(raw);
         for(const g of GENRES){
           if(!obj[g]) obj[g]=[];
-          obj[g] = obj[g].map(it => ({
-            id: String(it.id||crypto.randomUUID()),
-            title: String(it.title||"").trim(),
-            status: STATUSES.includes(it.status)? it.status : "未着手",
-            deadline: DEADLINES.includes(it.deadline)? it.deadline : DEADLINES[DEADLINES.length-1]
+          obj[g]=obj[g].map(it=>({
+            id:String(it.id||crypto.randomUUID()),
+            title:String(it.title||""),
+            status:STATUSES.includes(it.status)?it.status:"未着手",
+            deadline:DEADLINES.includes(it.deadline)?it.deadline:"未分類（未定）"
           }));
         }
         return obj;
-      }catch(e){
-        return Object.fromEntries(GENRES.map(g=>[g,[]]));
-      }
+      }catch(e){return Object.fromEntries(GENRES.map(g=>[g,[]]));}
     }
 
-    const gridsEl = document.getElementById("deadlineGrids");
-    const cardTmpl = document.getElementById("deadlineCardTmpl");
-    const itemTmpl = document.getElementById("itemTmpl");
-    const hideDoneEl = document.getElementById("hideDone");
-    const filtersEl = document.getElementById("deadlineFilters");
+    const gridsEl=document.getElementById("deadlineGrids");
+    const cardTmpl=document.getElementById("deadlineCardTmpl");
+    const itemTmpl=document.getElementById("itemTmpl");
+    const hideDoneEl=document.getElementById("hideDone");
+    const filtersEl=document.getElementById("deadlineFilters");
 
-    // Build filter checkboxes
-    const activeDeadlines = new Set(DEADLINES); // default: all on
+    const activeDeadlines=new Set(DEADLINES);
     function buildFilters(){
-      filtersEl.innerHTML = "";
-      DEADLINES.forEach(d => {
-        const label = document.createElement("label");
-        const cb = document.createElement("input");
-        cb.type = "checkbox"; cb.checked = true; cb.dataset.deadline = d;
-        cb.addEventListener("change", () => {
-          if(cb.checked) activeDeadlines.add(d); else activeDeadlines.delete(d);
-          render();
-        });
-        label.appendChild(cb);
-        label.append(d);
-        filtersEl.appendChild(label);
+      filtersEl.innerHTML="";
+      DEADLINES.forEach(d=>{
+        const label=document.createElement("label");
+        const cb=document.createElement("input");
+        cb.type="checkbox";cb.checked=true;cb.dataset.deadline=d;
+        cb.onchange=()=>{if(cb.checked)activeDeadlines.add(d);else activeDeadlines.delete(d);render();};
+        label.appendChild(cb);label.append(d);filtersEl.appendChild(label);
       });
-      hideDoneEl.addEventListener("change", render);
+      hideDoneEl.onchange=render;
     }
 
     function render(){
-      gridsEl.innerHTML = "";
-      DEADLINES.forEach(deadline => {
-        if(!activeDeadlines.has(deadline)) return; // hide whole group if unchecked
-
-        const section = cardTmpl.content.firstElementChild.cloneNode(true);
-        section.querySelector("h2").textContent = deadline;
-        const list = section.querySelector(".list");
-
-        const items = [];
+      gridsEl.innerHTML="";
+      DEADLINES.forEach(d=>{
+        if(!activeDeadlines.has(d)) return;
+        const sec=cardTmpl.content.firstElementChild.cloneNode(true);
+        sec.querySelector("h2").textContent=d;
+        const list=sec.querySelector(".list");
+        const items=[];
         for(const g of GENRES){
           for(const it of state[g]){
-            if(it.deadline !== deadline) continue;
-            if(hideDoneEl.checked && it.status === "達成") continue;
-            items.push({...it, genre:g});
+            if(it.deadline!==d) continue;
+            if(hideDoneEl.checked&&it.status==="達成") continue;
+            items.push({...it,genre:g});
           }
         }
-
-        if(items.length === 0){
-          const empty = document.createElement("div");
-          empty.className = "muted";
-          empty.textContent = "該当なし";
-          list.appendChild(empty);
+        if(items.length===0){
+          const em=document.createElement("div");em.className="muted";em.textContent="該当なし";list.appendChild(em);
         }else{
-          for(const it of items){
-            const node = itemTmpl.content.firstElementChild.cloneNode(true);
-            node.dataset.status = it.status;
-            node.querySelector(".title").textContent = it.title;
-            node.querySelector(".genre").textContent = it.genre;
-            node.querySelector(".status").textContent = it.status;
+          items.forEach(it=>{
+            const node=itemTmpl.content.firstElementChild.cloneNode(true);
+            node.dataset.status=it.status;
+            node.querySelector(".title").textContent=it.title;
+            node.querySelector(".genre").textContent=it.genre;
+            node.querySelector(".status").textContent=it.status;
             list.appendChild(node);
-          }
+          });
         }
-
-        gridsEl.appendChild(section);
+        gridsEl.appendChild(sec);
       });
     }
 
-    buildFilters();
-    render();
+    buildFilters();render();
   </script>
 </body>
 </html>
