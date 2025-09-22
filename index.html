@@ -5,89 +5,75 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BucketList Manager — Index</title>
   <style>
-    :root{
-      --bg:#0b0d10; --panel:#14181f; --muted:#a6adbb; --text:#e6edf3;
-      --accent:#4f8cff; --ok:#2ecc71; --danger:#ff5d5d; --border:#222833; --card:#0f131a;
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",sans-serif;
+      background:#f4f6f8;
+      color:#333;
     }
-    *{box-sizing:border-box}
-    body{ margin:0; font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI", sans-serif; background:linear-gradient(180deg,var(--bg),#0c1116 40%, #0a1016 100%); color:var(--text);}
-    header{ position:sticky; top:0; z-index:10; backdrop-filter:blur(6px); background:rgba(10,14,20,.7); border-bottom:1px solid var(--border); padding:12px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
-    h1{font-size:18px;margin:0 8px 0 0; font-weight:700; letter-spacing:.2px}
-    .pill{ font-size:12px; color:var(--muted); border:1px dashed #334; padding:6px 10px; border-radius:999px;}
-    main{padding:16px; max-width:1200px; margin:0 auto}
-    .toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0 16px;}
-    .btn{ appearance:none; border:none; background:var(--panel); color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer; border:1px solid var(--border);}
-    .btn.primary{ background: linear-gradient(180deg,#2a66ff,#234edb); border-color:#1b3aa7}
-    .btn.danger{ background:#2a1214; border-color:#5d1f24; color:#ffb3b3}
-    .btn.ghost{ background:transparent }
-    input, select{ background:#0e1420; color:var(--text); border:1px solid var(--border); padding:8px 10px; border-radius:10px; outline:none;}
-    input[type="text"]{ min-width: 220px}
-    a{ color:#9bb7ff; text-decoration:none }
-    .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px}
-    .tab{ padding:10px 12px; border-radius:12px; cursor:pointer; background:var(--panel); border:1px solid var(--border); color:var(--text); font-size:14px;}
-    .tab.active{ background:linear-gradient(180deg,#1b2030,#10151e); border-color:#3a4559; box-shadow:0 0 0 2px rgba(79,140,255,.25) inset;}
-    .grid{ display:grid; grid-template-columns:1fr; gap:14px;}
-    @media(min-width:1024px){ .grid{ grid-template-columns:1fr 1fr} }
-    .card{ background: linear-gradient(180deg,#0d1117,#0b1016); border:1px solid var(--border); border-radius:16px; padding:14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); min-height: 220px;}
-    .card h2{ font-size:14px; color:var(--muted); margin:0 0 10px; letter-spacing:.2px}
-    .add-row{ display:grid; grid-template-columns: 1fr 140px 180px 120px; gap:8px; align-items:center; margin-bottom:10px}
-    .list{ display:flex; flex-direction:column; gap:8px; min-height:80px}
-    .item{ display:grid; grid-template-columns: 22px 1fr 140px 180px 32px; gap:8px; align-items:center; background: var(--card); border:1px solid #1a2130; border-radius:12px; padding:8px;}
-    .drag{ width:22px; height:22px; border-radius:8px; border:1px dashed #324; display:flex; align-items:center; justify-content:center; font-size:14px; user-select:none; cursor:grab }
-    .title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-    .item[data-status="継続"] .title{ color: var(--ok); font-weight:600 }
-    .item[data-status="達成"] .title{ text-decoration: line-through; color:#9fb3c8 }
-    .status, .deadline { width:100%; }
-    .empty{ color:var(--muted); font-size:13px; border:1px dashed #2a3140; padding:12px; border-radius:12px; text-align:center}
-    .meta{ color:var(--muted); font-size:12px; margin-top:6px}
-    .del{ width:32px;height:32px;border-radius:10px;border:1px solid #39222a;background:#1a0f12;color:#ffb6c1;cursor:pointer}
-    footer{ color:var(--muted); font-size:12px; text-align:center; padding:24px}
-    .switch { display:flex; gap:6px; align-items:center; font-size:12px; color:var(--muted)}
-    .kbd{ background:#0e121a; border:1px solid #2a3140; border-bottom-color:#1a202c; padding:2px 6px; border-radius:6px; font-size:12px; color:#c6d0e0}
-    .hint{font-size:12px; color:var(--muted)}
+    header{
+      position:sticky;top:0;z-index:10;
+      background:#fff;
+      border-bottom:1px solid #ddd;
+      padding:12px 16px;
+      display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+      box-shadow:0 2px 4px rgba(0,0,0,.05);
+    }
+    h1{font-size:18px;margin:0 8px 0 0;font-weight:700}
+    .pill{font-size:12px;color:#666;border:1px dashed #bbb;padding:4px 8px;border-radius:999px;}
+    main{padding:16px;max-width:860px;margin:0 auto}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
+    .btn{appearance:none;border:none;background:#e9ecf2;color:#333;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid #ccc;font-size:14px}
+    .btn.primary{background:#2979ff;color:#fff;border-color:#2979ff}
+    .btn.danger{background:#ff5252;color:#fff;border-color:#ff5252}
+    .btn.ghost{background:transparent;border:none;color:#2979ff}
+    input,select{background:#fff;color:#333;border:1px solid #ccc;padding:6px 8px;border-radius:6px;outline:none;font-size:14px}
+    input[type="text"]{flex:1;min-width:200px}
+    a{color:#2979ff;text-decoration:none}
+    .grid{display:flex;flex-direction:column;gap:20px}
+    .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
+    .card h2{font-size:15px;color:#555;margin:0 0 12px}
+    .add-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+    .list{display:flex;flex-direction:column;gap:6px;min-height:60px}
+    .item{display:flex;gap:8px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:8px;padding:6px}
+    .drag{width:18px;height:18px;cursor:grab;color:#999}
+    .title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .item.is-ongoing .title{color:#2e7d32;font-weight:600}
+    .item.is-done .title{text-decoration:line-through;color:#777}
+    .status,.deadline{font-size:13px}
+    .del{width:28px;height:28px;border-radius:6px;border:none;background:#eee;color:#c00;cursor:pointer;font-weight:bold}
+    .empty{color:#888;font-size:13px;padding:8px;text-align:center}
+    .meta{color:#666;font-size:12px;margin-top:6px}
+    footer{color:#666;font-size:12px;text-align:center;padding:20px}
   </style>
 </head>
 <body>
   <header>
     <h1>BucketList Manager</h1>
-    <span class="pill">ジャンル別管理 / D&Dで並べ替え / CSV取り込み / 期限タグ</span>
-    <div class="toolbar" style="margin-left:auto">
-      <a class="btn ghost" href="progress.html">進捗（期限別）を見る →</a>
+    <span class="pill">ジャンル別管理 / CSV取り込み / 期限タグ</span>
+    <div class="toolbar">
+      <a class="btn ghost" href="progress.html">進捗（期限別）</a>
       <label class="btn">
-        CSV取り込み
-        <input id="csvInput" type="file" accept=".csv" style="display:none">
+        CSV取り込み<input id="csvInput" type="file" accept=".csv" style="display:none">
       </label>
-      <label class="switch">
-        <input id="replaceToggle" type="checkbox">
-        <span>全置換（既存を消してCSVで置き換え）</span>
-      </label>
-      <button id="clearAll" class="btn danger">全データ削除</button>
+      <label style="font-size:12px;color:#555"><input id="replaceToggle" type="checkbox"> 全置換</label>
+      <button id="clearAll" class="btn danger">全削除</button>
     </div>
   </header>
-
   <main>
-    <div class="tabs" id="tabs"></div>
     <div id="genreGrids" class="grid"></div>
-    <footer>
-      状態：<span class="kbd">未着手</span> / <span class="kbd">継続</span>（緑文字） / <span class="kbd">達成</span>（取り消し線）　|　
-      期限：<span class="kbd">1か月以内 / 3か月以内 / 半年以内 / 1年以内 / 3年以内 / 5年以内 / 10年以内 / 未分類</span>
-    </footer>
+    <footer>状態：未着手 / <span style="color:#2e7d32">継続</span> / <s>達成</s>　|　期限：1か月以内〜未分類</footer>
   </main>
 
   <template id="genreCardTmpl">
     <section class="card">
       <h2></h2>
       <div class="add-row">
-        <input type="text" placeholder="やりたいことを入力" class="newTitle">
-        <select class="newStatus">
-          <option>未着手</option>
-          <option>継続</option>
-          <option>達成</option>
-        </select>
+        <input type="text" placeholder="やりたいこと" class="newTitle">
+        <select class="newStatus"><option>未着手</option><option>継続</option><option>達成</option></select>
         <select class="newDeadline"></select>
         <button class="btn primary addBtn">追加</button>
       </div>
-      <div class="hint">ヒント：同じジャンル内で項目をドラッグ＆ドロップで並べ替えできます。</div>
       <div class="list"></div>
       <div class="empty">まだ項目がありません</div>
       <div class="meta"></div>
@@ -96,343 +82,98 @@
 
   <template id="itemTmpl">
     <div class="item" draggable="true">
-      <div class="drag" title="ドラッグで並べ替え">≡</div>
+      <div class="drag">≡</div>
       <div class="title"></div>
-      <select class="status">
-        <option>未着手</option>
-        <option>継続</option>
-        <option>達成</option>
-      </select>
+      <select class="status"><option>未着手</option><option>継続</option><option>達成</option></select>
       <select class="deadline"></select>
-      <button class="del" title="削除">×</button>
+      <button class="del">×</button>
     </div>
   </template>
 
   <script>
-    // ====== Constants ======
-    const GENRES = ["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
-    const STATUSES = ["未着手","継続","達成"];
-    const DEADLINES = ["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
-    const LS_KEY = "bucketlist.v2";
+    const GENRES=["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
+    const STATUSES=["未着手","継続","達成"];
+    const DEADLINES=["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
+    const LS_KEY="bucketlist.v2";
 
-    // ====== State ======
-    /** @type {Record<string, {id:string,title:string,status:string,deadline:string}[]>} */
-    let state = loadState();
+    const normalizeStatus=s=>STATUSES.includes(s)?s:"未着手";
+    const normalizeDeadline=d=>DEADLINES.includes(d)?d:"未分類（未定）";
 
+    let state=loadState();
     function loadState(){
       try{
-        const raw = localStorage.getItem(LS_KEY);
-        let obj;
-        if(!raw){
-          // migrate from v1 if exists
-          const v1 = localStorage.getItem("bucketlist.v1");
-          if(v1){
-            const old = JSON.parse(v1);
-            obj = {};
-            for(const g of GENRES){
-              obj[g] = (old[g]||[]).map(it => ({
-                id: String(it.id||crypto.randomUUID()),
-                title: String(it.title||"").trim(),
-                status: STATUSES.includes(it.status)? it.status : "未着手",
-                deadline: DEADLINES[DEADLINES.length-1] // 未分類
-              }));
-            }
-          }else{
-            obj = Object.fromEntries(GENRES.map(g=>[g,[]]));
-          }
-        }else{
-          obj = JSON.parse(raw);
-        }
-        // ensure schema
+        const raw=localStorage.getItem(LS_KEY);
+        if(!raw) return Object.fromEntries(GENRES.map(g=>[g,[]]));
+        const obj=JSON.parse(raw);
         for(const g of GENRES){
           if(!obj[g]) obj[g]=[];
-          obj[g] = obj[g].map(it => ({
-            id: String(it.id||crypto.randomUUID()),
-            title: String(it.title||"").trim(),
-            status: STATUSES.includes(it.status)? it.status : "未着手",
-            deadline: DEADLINES.includes(it.deadline)? it.deadline : DEADLINES[DEADLINES.length-1]
+          obj[g]=obj[g].map(it=>({
+            id:it.id||crypto.randomUUID(),
+            title:String(it.title||""),
+            status:normalizeStatus(it.status),
+            deadline:normalizeDeadline(it.deadline)
           }));
         }
         return obj;
-      }catch(e){
-        console.warn("Failed to load state, reset.", e);
-        return Object.fromEntries(GENRES.map(g=>[g,[]]));
-      }
+      }catch(e){return Object.fromEntries(GENRES.map(g=>[g,[]]));}
     }
-    function saveState(){
-      localStorage.setItem(LS_KEY, JSON.stringify(state));
-      renderMetaCounts();
-    }
+    function saveState(){localStorage.setItem(LS_KEY,JSON.stringify(state));}
 
-    // ====== UI Build ======
-    const tabsEl = document.getElementById("tabs");
-    const gridsEl = document.getElementById("genreGrids");
-    const genreCardTmpl = document.getElementById("genreCardTmpl");
-    const itemTmpl = document.getElementById("itemTmpl");
+    const grids=document.getElementById("genreGrids");
+    const tmpl=document.getElementById("genreCardTmpl");
+    const itemTmpl=document.getElementById("itemTmpl");
 
-    // Build tabs
-    let currentTab = GENRES[0];
-    function buildTabs(){
-      tabsEl.innerHTML = "";
-      GENRES.forEach(genre => {
-        const tab = document.createElement("button");
-        tab.className = "tab" + (genre===currentTab? " active": "");
-        tab.textContent = genre;
-        tab.addEventListener("click",()=>{
-          currentTab = genre;
-          buildTabs();
-          scrollToGenre(genre);
-        });
-        tabsEl.appendChild(tab);
+    function build(){
+      grids.innerHTML="";
+      GENRES.forEach(g=>{
+        const frag=tmpl.content.cloneNode(true);
+        const root=frag.querySelector("section"); root.dataset.genre=g;
+        root.querySelector("h2").textContent=g;
+        const list=root.querySelector(".list"); const empty=root.querySelector(".empty"); const meta=root.querySelector(".meta");
+        const addBtn=root.querySelector(".addBtn"); const newTitle=root.querySelector(".newTitle"); const newStatus=root.querySelector(".newStatus"); const newDeadline=root.querySelector(".newDeadline");
+        fillDeadline(newDeadline);
+        addBtn.onclick=()=>{
+          const t=newTitle.value.trim(); if(!t) return;
+          state[g].push({id:crypto.randomUUID(),title:t,status:normalizeStatus(newStatus.value),deadline:normalizeDeadline(newDeadline.value)});
+          newTitle.value=""; newStatus.value="未着手"; newDeadline.value="未分類（未定）";
+          renderList(g,list,empty,meta); saveState();
+        };
+        renderList(g,list,empty,meta);
+        grids.appendChild(root);
       });
     }
-    function scrollToGenre(genre){
-      const el = document.querySelector(`[data-genre="${genre}"]`);
-      if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
-    }
-
-    // Build genre cards
-    function buildGenreCards(){
-      gridsEl.innerHTML = "";
-      GENRES.forEach(genre => {
-        const frag = genreCardTmpl.content.cloneNode(true);
-        const root = frag.querySelector("section");
-        root.dataset.genre = genre;
-        const h2 = frag.querySelector("h2");
-        h2.textContent = genre;
-        const list = frag.querySelector(".list");
-        const empty = frag.querySelector(".empty");
-        const addBtn = frag.querySelector(".addBtn");
-        const newTitle = frag.querySelector(".newTitle");
-        const newStatus = frag.querySelector(".newStatus");
-        const newDeadline = frag.querySelector(".newDeadline");
-        const meta = frag.querySelector(".meta");
-
-        // fill deadline selects
-        fillDeadlineOptions(newDeadline);
-
-        addBtn.addEventListener("click",()=>{
-          const title = newTitle.value.trim();
-          const status = newStatus.value;
-          const deadline = newDeadline.value;
-          if(!title) { newTitle.focus(); return; }
-          const item = { id: crypto.randomUUID(), title, status, deadline };
-          state[genre].push(item);
-          newTitle.value = "";
-          newStatus.value = "未着手";
-          newDeadline.value = DEADLINES[DEADLINES.length-1];
-          renderList(genre, list, empty);
-          saveState();
-        });
-        newTitle.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ addBtn.click(); } });
-
-        // Drag and drop
-        enableDragAndDrop(genre, list);
-
-        gridsEl.appendChild(root);
-        renderList(genre, list, empty);
-        updateMeta(meta, genre);
+    function fillDeadline(sel){sel.innerHTML="";DEADLINES.forEach(d=>{const o=document.createElement("option");o.text=d;sel.add(o);});sel.value="未分類（未定）";}
+    function applyStyles(node,status){node.classList.toggle("is-ongoing",status==="継続");node.classList.toggle("is-done",status==="達成");}
+    function renderList(g,list,empty,meta){
+      list.innerHTML=""; const items=state[g]; empty.style.display=items.length?"none":"block";
+      items.forEach(it=>{
+        const n=itemTmpl.content.firstElementChild.cloneNode(true);
+        n.dataset.id=it.id; applyStyles(n,it.status);
+        n.querySelector(".title").textContent=it.title;
+        const selS=n.querySelector(".status"); selS.value=it.status;
+        selS.onchange=()=>{it.status=normalizeStatus(selS.value);applyStyles(n,it.status);saveState();};
+        const selD=n.querySelector(".deadline"); fillDeadline(selD); selD.value=it.deadline; selD.onchange=()=>{it.deadline=normalizeDeadline(selD.value);saveState();};
+        n.querySelector(".del").onclick=()=>{if(confirm("削除しますか?")){state[g]=state[g].filter(x=>x.id!==it.id);renderList(g,list,empty,meta);saveState();}};
+        list.appendChild(n);
       });
+      meta.textContent=`件数:${items.length}`;
     }
 
-    function fillDeadlineOptions(selectEl){
-      selectEl.innerHTML = "";
-      for(const d of DEADLINES){
-        const opt = document.createElement("option");
-        opt.textContent = d;
-        opt.value = d;
-        selectEl.appendChild(opt);
-      }
-      selectEl.value = DEADLINES[DEADLINES.length-1]; // 未分類
-    }
-
-    function updateMeta(metaEl, genre){
-      const items = state[genre];
-      const counts = { "未着手":0, "継続":0, "達成":0 };
-      for(const it of items){ counts[it.status]++; }
-      metaEl.textContent = `件数：${items.length}（未着手 ${counts["未着手"]} / 継続 ${counts["継続"]} / 達成 ${counts["達成"]}）`;
-    }
-    function renderMetaCounts(){
-      document.querySelectorAll('[data-genre]').forEach(sec=>{
-        const genre = sec.dataset.genre;
-        const meta = sec.querySelector('.meta');
-        if(meta) updateMeta(meta, genre);
+    document.getElementById("csvInput").addEventListener("change",async e=>{
+      const f=e.target.files[0]; if(!f) return;
+      const rep=document.getElementById("replaceToggle").checked;
+      const text=await f.text(); const rows=text.split(/\r?\n/).map(r=>r.split(","));
+      if(rep) state=Object.fromEntries(GENRES.map(g=>[g,[]]));
+      rows.forEach(r=>{
+        if(r.length<2) return; const g=r[0].trim(),t=r[1].trim(); if(!GENRES.includes(g)||!t) return;
+        const s=normalizeStatus(r[2]); const d=normalizeDeadline(r[3]);
+        const ex=state[g].find(x=>x.title===t); if(ex){ex.status=s;ex.deadline=d;}else{state[g].push({id:crypto.randomUUID(),title:t,status:s,deadline:d});}
       });
-    }
-
-    function renderList(genre, listEl, emptyEl){
-      listEl.innerHTML = "";
-      const items = state[genre];
-      emptyEl.style.display = items.length ? "none":"block";
-      items.forEach((item)=>{
-        const node = itemTmpl.content.firstElementChild.cloneNode(true);
-        node.dataset.id = item.id;
-        node.dataset.status = item.status;
-        node.querySelector(".title").textContent = item.title;
-        const selStatus = node.querySelector(".status");
-        selStatus.value = item.status;
-        selStatus.addEventListener("change",()=>{
-          item.status = selStatus.value;
-          node.dataset.status = item.status;
-          saveState();
-        });
-        const selDeadline = node.querySelector(".deadline");
-        fillDeadlineOptions(selDeadline);
-        selDeadline.value = item.deadline;
-        selDeadline.addEventListener("change",()=>{
-          item.deadline = selDeadline.value;
-          saveState();
-        });
-        node.querySelector(".del").addEventListener("click",()=>{
-          if(confirm("削除しますか？")){
-            const arr = state[genre];
-            const i = arr.findIndex(x=>x.id===item.id);
-            if(i>=0){ arr.splice(i,1); renderList(genre, listEl, emptyEl); saveState(); }
-          }
-        });
-        listEl.appendChild(node);
-      });
-      updateMeta(listEl.parentElement.querySelector(".meta"), genre);
-    }
-
-    function enableDragAndDrop(genre, listEl){
-      listEl.addEventListener("dragstart", (e)=>{
-        const item = e.target.closest(".item");
-        if(!item) return;
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", item.dataset.id);
-        item.classList.add("dragging");
-      });
-      listEl.addEventListener("dragend",(e)=>{ e.target.classList?.remove("dragging"); });
-      listEl.addEventListener("dragover",(e)=>{
-        e.preventDefault();
-        const afterEl = getDragAfterElement(listEl, e.clientY);
-        const dragging = listEl.querySelector(".dragging");
-        if(!dragging) return;
-        if(afterEl==null){ listEl.appendChild(dragging); } else { listEl.insertBefore(dragging, afterEl); }
-      });
-      listEl.addEventListener("drop", (e)=>{
-        e.preventDefault();
-        const orderIds = Array.from(listEl.querySelectorAll(".item")).map(n=>n.dataset.id);
-        const map = Object.fromEntries(state[genre].map(it=>[it.id, it]));
-        state[genre] = orderIds.map(id=>map[id]).filter(Boolean);
-        saveState();
-      });
-    }
-    function getDragAfterElement(container, y){
-      const els = [...container.querySelectorAll(".item:not(.dragging)")];
-      let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
-      for(const el of els){
-        const box = el.getBoundingClientRect();
-        const offset = y - box.top - box.height/2;
-        if(offset < 0 && offset > closest.offset){ closest = {offset, element: el}; }
-      }
-      return closest.element;
-    }
-
-    // ====== CSV Import ======
-    document.getElementById("csvInput").addEventListener("change", handleCSV, false);
-    document.getElementById("clearAll").addEventListener("click", ()=>{
-      if(confirm("全データを削除して初期化しますか？")){
-        state = Object.fromEntries(GENRES.map(g=>[g,[]]));
-        saveState(); buildGenreCards();
-      }
+      saveState(); build(); e.target.value="";
     });
+    document.getElementById("clearAll").onclick=()=>{if(confirm("全削除しますか?")){state=Object.fromEntries(GENRES.map(g=>[g,[]]));saveState();build();}};
 
-    async function handleCSV(e){
-      const file = e.target.files?.[0];
-      if(!file) return;
-      const replace = document.getElementById("replaceToggle").checked;
-      const text = await file.text();
-      const rows = parseCSV(text).filter(r=>r.length && r.join("").trim()!=="");
-      if(rows.length===0){ alert("CSVにデータがありません"); return; }
-
-      // header detection
-      let header = rows[0].map(h=>h.trim());
-      let startIdx = 0;
-      const lowerHeader = header.map(h=>h.toLowerCase());
-      const hasHeader = (lowerHeader.includes("genre") || lowerHeader.includes("ジャンル")) &&
-                        (lowerHeader.includes("title") || lowerHeader.includes("項目") || lowerHeader.includes("name") || lowerHeader.includes("タスク")) &&
-                        (lowerHeader.includes("status") || lowerHeader.includes("状態") || lowerHeader.includes("ステータス"));
-      if(hasHeader){ startIdx = 1; }
-
-      const colIdx = {
-        genre: findColIndex(header, ["genre","ジャンル"]),
-        title: findColIndex(header, ["title","項目","name","タスク"]),
-        status: findColIndex(header, ["status","状態","ステータス"]),
-        deadline: findColIndex(header, ["deadline","期限","目標期限"]),
-      };
-      if(colIdx.genre<0 || colIdx.title<0){
-        alert("CSVヘッダーを認識できませんでした。\n必要列: genre(ジャンル), title(項目)\n任意列: status(状態), deadline(期限)");
-        return;
-      }
-
-      if(replace){ state = Object.fromEntries(GENRES.map(g=>[g,[]])); }
-
-      let added=0, updated=0, skipped=0, badGenre=0;
-      for(let i=startIdx;i<rows.length;i++){
-        const r = rows[i];
-        const g = (r[colIdx.genre]||"").trim();
-        const t = (r[colIdx.title]||"").trim();
-        let s = (colIdx.status>=0? (r[colIdx.status]||"").trim(): "未着手");
-        let d = (colIdx.deadline>=0? (r[colIdx.deadline]||"").trim(): DEADLINES[DEADLINES.length-1]);
-        if(!GENRES.includes(g)){ badGenre++; continue; }
-        if(!STATUSES.includes(s)){ s = "未着手"; }
-        if(!DEADLINES.includes(d)){ d = DEADLINES[DEADLINES.length-1]; }
-        if(!t){ skipped++; continue; }
-
-        // upsert by exact title match within genre
-        const existing = state[g].find(it => it.title === t);
-        if(existing){
-          const before = JSON.stringify(existing);
-          existing.status = s;
-          existing.deadline = d;
-          updated += (before !== JSON.stringify(existing)) ? 1 : 0;
-        }else{
-          state[g].push({ id: crypto.randomUUID(), title: t, status: s, deadline: d });
-          added++;
-        }
-      }
-      saveState();
-      buildGenreCards();
-      alert(`CSV取り込み完了\n追加:${added} / 更新:${updated} / スキップ:${skipped} / 不明ジャンル:${badGenre}`);
-      e.target.value = "";
-    }
-
-    function findColIndex(header, keys){
-      const low = header.map(h=>h.toLowerCase());
-      for(const k of keys){
-        const i = low.indexOf(k.toLowerCase());
-        if(i>=0) return i;
-      }
-      return -1;
-    }
-
-    // Simple CSV parser
-    function parseCSV(text){
-      const rows = [];
-      let row = [], field = "", inQuotes = false;
-      for(let i=0;i<text.length;i++){
-        const c = text[i], n = text[i+1];
-        if(inQuotes){
-          if(c === '"' && n === '"'){ field += '"'; i++; continue; }
-          if(c === '"'){ inQuotes = false; continue; }
-          field += c;
-        }else{
-          if(c === '"'){ inQuotes = true; continue; }
-          if(c === ','){ row.push(field); field=""; continue; }
-          if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=""; continue; }
-          if(c === '\r'){ continue; }
-          field += c;
-        }
-      }
-      row.push(field); rows.push(row);
-      return rows;
-    }
-
-    // ====== Init ======
-    buildTabs();
-    buildGenreCards();
+    build();
   </script>
 </body>
 </html>
