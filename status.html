@@ -24,6 +24,7 @@
     .filters label{display:flex;align-items:center;gap:6px;font-size:13px;color:#555}
     .chips{display:flex;flex-wrap:wrap;gap:8px}
     .chip{font-size:12px;border:1px solid #ccc;background:#fff;border-radius:999px;padding:2px 10px;color:#555}
+    .muted{color:#666;font-size:12px}
   </style>
 </head>
 <body>
@@ -67,6 +68,7 @@
     const DEADLINES=["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
     const LS_KEY="bucketlist.v2";
 
+    // v2をロード。なければ空データ
     function loadState(){
       try{
         const raw=localStorage.getItem(LS_KEY);
@@ -86,6 +88,7 @@
     }
 
     const state = loadState();
+
     const gridsEl=document.getElementById("statusGrids");
     const cardTmpl=document.getElementById("statusCardTmpl");
     const itemTmpl=document.getElementById("itemTmpl");
@@ -93,6 +96,7 @@
     const groupByGenreEl=document.getElementById("groupByGenre");
     const showDeadlineEl=document.getElementById("showDeadline");
 
+    // 選択されたステータスのみ表示
     const activeStatuses=new Set(STATUSES);
 
     function buildFilters(){
@@ -102,4 +106,79 @@
         chip.className="chip";
         const cb=document.createElement("input");
         cb.type="checkbox"; cb.checked=true; cb.dataset.status=s;
-        cb.onchange=()=>{ if(cb.checked) activeStatuses.add(s); else
+        cb.onchange=()=>{
+          if(cb.checked) activeStatuses.add(s); else activeStatuses.delete(s);
+          render();
+        };
+        chip.appendChild(cb);
+        chip.append(" "+s);
+        filtersEl.appendChild(chip);
+      });
+      groupByGenreEl.onchange=render;
+      showDeadlineEl.onchange=render;
+    }
+
+    function render(){
+      gridsEl.innerHTML="";
+
+      // フィルターで外されたステータスはカードごと非表示
+      STATUSES.forEach(status=>{
+        if(!activeStatuses.has(status)) return;
+
+        // このステータスのアイテムを収集
+        const items=[];
+        for(const g of GENRES){
+          for(const it of state[g]){
+            if(it.status!==status) continue;
+            items.push({...it, genre:g});
+          }
+        }
+        if(items.length===0) return; // 結果がないステータスは出さない
+
+        const sec=cardTmpl.content.firstElementChild.cloneNode(true);
+        sec.querySelector("h2").textContent=status;
+        const list=sec.querySelector(".list");
+
+        if(groupByGenreEl.checked){
+          // ジャンルごとに小見出しを作って並べる
+          GENRES.forEach(g=>{
+            const sub=items.filter(i=>i.genre===g);
+            if(sub.length===0) return;
+            const subTitle=document.createElement("div");
+            subTitle.style="margin:6px 2px;color:#777;font-size:12px";
+            subTitle.textContent="— "+g;
+            list.appendChild(subTitle);
+            sub.forEach(it=> list.appendChild(renderItem(it)));
+          });
+        }else{
+          items.forEach(it=> list.appendChild(renderItem(it)));
+        }
+
+        gridsEl.appendChild(sec);
+      });
+
+      // 何も選択されてない、または結果ゼロのときの案内
+      if(!gridsEl.children.length){
+        const empty=document.createElement("div");
+        empty.className="muted";
+        empty.textContent="表示する項目がありません（上部のステータスを選択してください）。";
+        gridsEl.appendChild(empty);
+      }
+    }
+
+    function renderItem(it){
+      const node=itemTmpl.content.firstElementChild.cloneNode(true);
+      node.dataset.status=it.status;
+      node.querySelector(".title").textContent=it.title;
+      node.querySelector(".genre").textContent=it.genre;
+      const dl = node.querySelector(".deadline");
+      dl.textContent = it.deadline;
+      dl.style.display = showDeadlineEl.checked ? "inline-block" : "none";
+      return node;
+    }
+
+    buildFilters();
+    render();
+  </script>
+</body>
+</html>
