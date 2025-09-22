@@ -3,237 +3,165 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>実施状況 - My Bucket List</title>
-  <link rel="stylesheet" href="./style.css?v=2" />
+  <title>BucketList Progress — 期限別ビュー</title>
   <style>
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 16px}
-    .btn{border:1px solid #222;background:#fff;border-radius:6px;padding:6px 10px;cursor:pointer}
-    .btn[aria-pressed="true"]{background:#111;color:#fff}
-    .section{margin:22px 0}
-    .section h2{margin:0 0 10px}
-    .pill{display:inline-block;padding:2px 8px;border:1px solid #94a3b8;border-radius:999px;font-size:12px;color:#334155}
-    .meta{color:#64748b;font-size:12px;margin-left:8px}
-    .items li{margin:8px 0}
-    .controls{display:inline-flex;gap:6px;margin-left:8px;vertical-align:middle}
-    .controls select{padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px}
-    .muted{color:#666;font-size:12px}
-    nav a{color:#2563eb;text-decoration:none;font-weight:600}
-    nav a:hover{text-decoration:underline}
+    :root{
+      --bg:#0b0d10; --panel:#14181f; --muted:#a6adbb; --text:#e6edf3;
+      --accent:#4f8cff; --ok:#2ecc71; --danger:#ff5d5d; --border:#222833; --card:#0f131a;
+    }
+    *{box-sizing:border-box}
+    body{ margin:0; font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI", sans-serif; background:linear-gradient(180deg,var(--bg),#0c1116 40%, #0a1016 100%); color:var(--text);}
+    header{ position:sticky; top:0; z-index:10; backdrop-filter:blur(6px); background:rgba(10,14,20,.7); border-bottom:1px solid var(--border); padding:12px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
+    h1{font-size:18px;margin:0 8px 0 0; font-weight:700; letter-spacing:.2px}
+    a{ color:#9bb7ff; text-decoration:none }
+    .toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-left:auto}
+    .btn{ appearance:none; border:none; background:var(--panel); color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer; border:1px solid var(--border);}
+    .grid{ display:grid; grid-template-columns:1fr; gap:14px; padding:16px; max-width:1200px; margin:0 auto}
+    @media(min-width:1024px){ .grid{ grid-template-columns:1fr 1fr} }
+    .card{ background: linear-gradient(180deg,#0d1117,#0b1016); border:1px solid var(--border); border-radius:16px; padding:14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); min-height: 160px;}
+    .card h2{ font-size:14px; color:var(--muted); margin:0 0 10px; letter-spacing:.2px}
+    .list{ display:flex; flex-direction:column; gap:8px}
+    .item{ display:grid; grid-template-columns: 1fr 160px 160px; gap:8px; align-items:center; background: var(--card); border:1px solid #1a2130; border-radius:12px; padding:8px;}
+    .title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+    .item[data-status="継続"] .title{ color: var(--ok); font-weight:600 }
+    .item[data-status="達成"] .title{ text-decoration: line-through; color:#9fb3c8 }
+    .badge{ font-size:12px; color:#cdd7ea; border:1px solid #334; border-radius:999px; padding:2px 8px; display:inline-block; text-align:center}
+    .filters{ display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px; background:rgba(20,24,31,.4); border-bottom:1px solid var(--border)}
+    .filters label{ display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted) }
+    .filters .group{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+    .muted{ color:var(--muted); font-size:12px}
   </style>
 </head>
 <body>
-  <div class="paper">
-    <div class="sheet">
-      <header class="sheet__header">
-        <h1>実施状況</h1>
-        <p class="muted">※ このページは <code>index.html</code> と同じ <strong>localStorage</strong> のデータを参照します。</p>
-        <nav><a href="index.html">← Bucket List に戻る</a></nav>
-
-        <div class="toolbar" id="toolbar">
-          <span class="muted">フィルタ:</span>
-          <button type="button" class="btn" data-filter="all" aria-pressed="true">すべて</button>
-          <button type="button" class="btn" data-filter="month">今月中</button>
-          <button type="button" class="btn" data-filter="year">今年中</button>
-          <button type="button" class="btn" data-filter="5year">5年以内</button>
-          <button type="button" class="btn" data-filter="10year">10年以内</button>
-          <button type="button" class="btn" data-filter="someday">未分類/いつか</button>
-
-          <span class="muted" style="margin-left:12px">表示:</span>
-          <button type="button" class="btn" id="mode-flat" aria-pressed="false">リスト</button>
-          <button type="button" class="btn" id="mode-grouped" aria-pressed="true">グループ</button>
-        </div>
-
-        <p class="muted" id="updated">（最終更新日: —）</p>
-      </header>
-
-      <div id="progress"></div>
+  <header>
+    <h1>期限別ビュー</h1>
+    <div class="toolbar">
+      <a class="btn" href="index.html">← Indexへ戻る</a>
     </div>
-  </div>
+  </header>
+
+  <section class="filters">
+    <div class="group" id="deadlineFilters">
+      <!-- dynamically filled with deadline checkboxes -->
+    </div>
+    <div class="group">
+      <label><input type="checkbox" id="hideDone"> 達成を非表示</label>
+    </div>
+    <div class="group muted">複数の期限をチェックすると、そのいずれかに当てはまる項目が表示されます。</div>
+  </section>
+
+  <main class="grid" id="deadlineGrids"></main>
+
+  <template id="deadlineCardTmpl">
+    <section class="card">
+      <h2></h2>
+      <div class="list"></div>
+    </section>
+  </template>
+
+  <template id="itemTmpl">
+    <div class="item">
+      <div class="title"></div>
+      <div class="badge genre"></div>
+      <div class="badge status"></div>
+    </div>
+  </template>
 
   <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // ====== 安全に読み込む ======
-    const KEY = "bucketlist_v4"; // index.html と合わせる
-    const safeParse = (raw) => { try { return JSON.parse(raw); } catch { return null; } };
-    let state = safeParse(localStorage.getItem(KEY)) || {};
-    if (!state.categories) state.categories = [];
+    // shared constants (match index.html)
+    const GENRES = ["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
+    const STATUSES = ["未着手","継続","達成"];
+    const DEADLINES = ["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
+    const LS_KEY = "bucketlist.v2";
 
-    // 既存データ救済（id/target/status を補完）
-    let seq = Date.now();
-    state.categories.forEach(cat => {
-      if (!Array.isArray(cat.items)) cat.items = [];
-      cat.items.forEach(it => {
-        if (!it.id) it.id = `it_${seq++}`;
-        if (!it.target) it.target = "someday";
-        if (!it.status) it.status = "todo";
-      });
-    });
-    // 保存（updatedAtは触らない）
-    localStorage.setItem(KEY, JSON.stringify(state));
+    /** @type {Record<string, {id:string,title:string,status:string,deadline:string}[]>} */
+    let state = loadState();
 
-    const TARGET_LABEL = {
-      month: "今月中", year: "今年中", "5year": "5年以内", "10year": "10年以内", someday: "未分類/いつか"
-    };
-    const statusClass = { done:"done red", progress:"blue", ongoing:"green", todo:"" };
-
-    const $ = (s) => document.querySelector(s);
-    const $$ = (s) => document.querySelectorAll(s);
-
-    // 画面状態
-    let currentFilter = "all";   // all | month | year | 5year | 10year | someday
-    let viewMode = "grouped";    // grouped | flat
-
-    // ユーティリティ
-    const el=(tag,attrs={},...chs)=>{
-      const n=document.createElement(tag);
-      for(const[k,v] of Object.entries(attrs)){
-        if(k==="class") n.className=v;
-        else if(k.startsWith("on")) n.addEventListener(k.slice(2),v);
-        else n.setAttribute(k,v);
-      }
-      chs.forEach(c=>n.append(c instanceof Node?c:document.createTextNode(c)));
-      return n;
-    };
-    const walkItems=()=>{
-      const out=[];
-      state.categories.forEach(cat=>{
-        (cat.items||[]).forEach(it=>{
-          out.push({...it, categoryTitle:cat.title||"", categoryId:cat.id||""});
-        });
-      });
-      return out;
-    };
-    const save=()=>{
-      state.updatedAt = new Date().toISOString();
-      localStorage.setItem(KEY, JSON.stringify(state));
-      const up = $("#updated");
-      if (up) up.textContent = `（最終更新日: ${new Date(state.updatedAt).toLocaleString()}）`;
-    };
-    // 初回 updated 表示
-    if (state.updatedAt) {
-      $("#updated").textContent = `（最終更新日: ${new Date(state.updatedAt).toLocaleString()}）`;
-    }
-
-    // 描画
-    function render(){
-      const box = $("#progress");
-      if (!box) return;
-      box.innerHTML = "";
-
-      const items = walkItems().filter(it=>{
-        if(currentFilter==="all") return true;
-        return (it.target||"someday")===currentFilter;
-      });
-
-      if(viewMode==="flat"){
-        renderFlat(box, items);
-      }else{
-        renderGrouped(box, items);
-      }
-    }
-
-    function renderFlat(root, items){
-      const ol = el("ol",{class:"items"});
-      items.sort((a,b)=>{
-        const t=(a.target||"someday").localeCompare(b.target||"someday");
-        if(t!==0) return t;
-        const s=a.status.localeCompare(b.status);
-        if(s!==0) return s;
-        return (a.text||"").localeCompare(b.text||"");
-      });
-      items.forEach((it,i)=> ol.append(renderLineItem(it, i+1)));
-      if(items.length===0) ol.append(el("li",{class:"muted"},"該当なし"));
-      root.append(ol);
-    }
-
-    function renderGrouped(root, items){
-      const groups={month:[],year:[],"5year":[],"10year":[],someday:[]};
-      items.forEach(it=> groups[it.target||"someday"].push(it));
-      ["month","year","5year","10year","someday"].forEach(key=>{
-        const list=groups[key];
-        const sec=el("div",{class:"section"});
-        sec.append(
-          el("h2",{}, `${TARGET_LABEL[key]}`, el("span",{class:"meta"}, `（${list.length}件）`))
-        );
-        const ol=el("ol",{class:"items"});
-        list.forEach((it,i)=> ol.append(renderLineItem(it,i+1)));
-        if(list.length===0) ol.append(el("li",{class:"muted"},"なし"));
-        sec.append(ol);
-        root.append(sec);
-      });
-    }
-
-    function renderLineItem(it, no){
-      const li=el("li");
-      const label=el("span",{class:statusClass[it.status]||""}, `${no}. ${it.text||""}`);
-      const cat=el("span",{class:"pill",style:"margin-left:8px"}, it.categoryTitle||"");
-
-      const targetSel=el("select",{title:"目標時期を変更",onchange:(e)=>updateTarget(it.id,e.target.value)},
-        el("option",{value:"month", selected:it.target==="month"},"今月中"),
-        el("option",{value:"year",  selected:it.target==="year"},"今年中"),
-        el("option",{value:"5year", selected:it.target==="5year"},"5年以内"),
-        el("option",{value:"10year",selected:it.target==="10year"},"10年以内"),
-        el("option",{value:"someday", selected:!it.target || it.target==="someday"},"未分類/いつか"),
-      );
-      const statusSel=el("select",{title:"状態を変更",onchange:(e)=>updateStatus(it.id,e.target.value)},
-        el("option",{value:"todo",    selected:it.status==="todo"},"未"),
-        el("option",{value:"progress",selected:it.status==="progress"},"進捗"),
-        el("option",{value:"ongoing", selected:it.status==="ongoing"},"継続"),
-        el("option",{value:"done",    selected:it.status==="done"},"達成"),
-      );
-
-      const ctrls=el("span",{class:"controls"}, targetSel, statusSel);
-      li.append(label, cat, ctrls);
-      return li;
-    }
-
-    function findItemById(id){
-      for(const cat of state.categories){
-        const idx=(cat.items||[]).findIndex(x=>x.id===id);
-        if(idx>=0) return {cat, idx};
-      }
-      return null;
-    }
-    function updateTarget(id,val){
-      const ref=findItemById(id); if(!ref) return;
-      ref.cat.items[ref.idx].target=val; save(); render();
-    }
-    function updateStatus(id,val){
-      const ref=findItemById(id); if(!ref) return;
-      ref.cat.items[ref.idx].status=val; save(); render();
-    }
-
-    // ====== イベント（安全策：委譲 + 存在チェック） ======
-    const tb = $("#toolbar");
-    if (tb) {
-      tb.addEventListener("click", (e)=>{
-        const btn = e.target.closest('.btn');
-        if(!btn) return;
-        if (btn.hasAttribute('data-filter')) {
-          $$('#toolbar .btn[data-filter]').forEach(b=>b.setAttribute('aria-pressed','false'));
-          btn.setAttribute('aria-pressed','true');
-          currentFilter = btn.getAttribute('data-filter');
-          render();
-        } else if (btn.id === 'mode-flat') {
-          $("#mode-flat").setAttribute('aria-pressed','true');
-          $("#mode-grouped").setAttribute('aria-pressed','false');
-          viewMode="flat"; render();
-        } else if (btn.id === 'mode-grouped') {
-          $("#mode-grouped").setAttribute('aria-pressed','true');
-          $("#mode-flat").setAttribute('aria-pressed','false');
-          viewMode="grouped"; render();
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(LS_KEY);
+        if(!raw){ return Object.fromEntries(GENRES.map(g=>[g,[]])); }
+        const obj = JSON.parse(raw);
+        for(const g of GENRES){
+          if(!obj[g]) obj[g]=[];
+          obj[g] = obj[g].map(it => ({
+            id: String(it.id||crypto.randomUUID()),
+            title: String(it.title||"").trim(),
+            status: STATUSES.includes(it.status)? it.status : "未着手",
+            deadline: DEADLINES.includes(it.deadline)? it.deadline : DEADLINES[DEADLINES.length-1]
+          }));
         }
+        return obj;
+      }catch(e){
+        return Object.fromEntries(GENRES.map(g=>[g,[]]));
+      }
+    }
+
+    const gridsEl = document.getElementById("deadlineGrids");
+    const cardTmpl = document.getElementById("deadlineCardTmpl");
+    const itemTmpl = document.getElementById("itemTmpl");
+    const hideDoneEl = document.getElementById("hideDone");
+    const filtersEl = document.getElementById("deadlineFilters");
+
+    // Build filter checkboxes
+    const activeDeadlines = new Set(DEADLINES); // default: all on
+    function buildFilters(){
+      filtersEl.innerHTML = "";
+      DEADLINES.forEach(d => {
+        const label = document.createElement("label");
+        const cb = document.createElement("input");
+        cb.type = "checkbox"; cb.checked = true; cb.dataset.deadline = d;
+        cb.addEventListener("change", () => {
+          if(cb.checked) activeDeadlines.add(d); else activeDeadlines.delete(d);
+          render();
+        });
+        label.appendChild(cb);
+        label.append(d);
+        filtersEl.appendChild(label);
+      });
+      hideDoneEl.addEventListener("change", render);
+    }
+
+    function render(){
+      gridsEl.innerHTML = "";
+      DEADLINES.forEach(deadline => {
+        if(!activeDeadlines.has(deadline)) return; // hide whole group if unchecked
+
+        const section = cardTmpl.content.firstElementChild.cloneNode(true);
+        section.querySelector("h2").textContent = deadline;
+        const list = section.querySelector(".list");
+
+        const items = [];
+        for(const g of GENRES){
+          for(const it of state[g]){
+            if(it.deadline !== deadline) continue;
+            if(hideDoneEl.checked && it.status === "達成") continue;
+            items.push({...it, genre:g});
+          }
+        }
+
+        if(items.length === 0){
+          const empty = document.createElement("div");
+          empty.className = "muted";
+          empty.textContent = "該当なし";
+          list.appendChild(empty);
+        }else{
+          for(const it of items){
+            const node = itemTmpl.content.firstElementChild.cloneNode(true);
+            node.dataset.status = it.status;
+            node.querySelector(".title").textContent = it.title;
+            node.querySelector(".genre").textContent = it.genre;
+            node.querySelector(".status").textContent = it.status;
+            list.appendChild(node);
+          }
+        }
+
+        gridsEl.appendChild(section);
       });
     }
 
-    // 初回描画
+    buildFilters();
     render();
-
-    // もし何かJSエラーが起きていたら気づけるように
-    window.addEventListener('error', (e)=>{
-      console.error('progress.html error:', e.message, e.filename, e.lineno);
-    });
-  });
   </script>
 </body>
 </html>
