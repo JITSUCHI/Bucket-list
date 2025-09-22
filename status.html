@@ -37,7 +37,6 @@
         <option value="継続">継続</option>
         <option value="達成">達成</option>
       </select>
-      <span class="muted">※ 選んだ状態のみを表示。初期は未選択です。</span>
     </div>
 
     <div id="container" class="grid"></div>
@@ -141,10 +140,11 @@
       container.appendChild(sec);
     }
 
-    // 初期は未選択
-    statusSelect.value="";
-    statusSelect.addEventListener("change", render);
+    // 初期選択を「継続」に設定
+    statusSelect.value="継続";
     render();
+
+    statusSelect.addEventListener("change", render);
   </script>
 </body>
 </html>
