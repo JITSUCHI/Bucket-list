@@ -24,6 +24,7 @@
     select,input[type=text]{font-size:14px}
     .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
     .toolbar input[type=file]{display:none}
+    .hint{color:#666;font-size:12px}
   </style>
 </head>
 <body>
@@ -34,12 +35,14 @@
       <a class="btn ghost" href="status.html">状況別</a>
       <label class="btn"><input id="csvFile" type="file" accept=".csv">CSV取り込み</label>
       <label style="font-size:12px;color:#555"><input id="replaceToggle" type="checkbox"> 全置換</label>
+      <button id="exportCSV" class="btn">CSV出力</button>
       <button id="clearAll" class="btn danger">全削除</button>
     </div>
   </header>
 
   <main>
     <div class="grid" id="genreGrids"></div>
+    <p class="hint">※ CSV 取り込み/出力の列は <code>genre,title,status,deadline,note</code> です。</p>
   </main>
 
   <template id="cardTmpl">
@@ -73,6 +76,34 @@
     const DEADLINES=["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
     const LS_KEY="bucketlist.v2";
 
+    // --- 一度だけ v1 -> v2 へ自動移行（残っていた場合） ---
+    (function oneTimeMigrateV1toV2(){
+      try{
+        const v2raw=localStorage.getItem(LS_KEY);
+        if(v2raw){
+          const v2obj=JSON.parse(v2raw);
+          const hasData=Object.values(v2obj||{}).some(a=>Array.isArray(a)&&a.length>0);
+          if(hasData) return;
+        }
+        const v1raw=localStorage.getItem("bucketlist.v1");
+        if(!v1raw) return;
+        const v1=JSON.parse(v1raw);
+        const v2=Object.fromEntries(GENRES.map(g=>[g,[]]));
+        for(const g of GENRES){
+          const arr=Array.isArray(v1?.[g])?v1[g]:[];
+          for(const it of arr){
+            if(!it||!it.title) continue;
+            const sRaw=String(it.status||"");
+            const status = sRaw.includes("達成")? "達成" : sRaw.includes("継続")? "継続" : (STATUSES.includes(sRaw)?sRaw:"未着手");
+            const deadline = DEADLINES.includes(it.deadline)? it.deadline : "未分類（未定）";
+            v2[g].push({id:crypto.randomUUID(), title:String(it.title), status, deadline, note:String(it.note||"")});
+          }
+        }
+        localStorage.setItem(LS_KEY, JSON.stringify(v2));
+        localStorage.removeItem("bucketlist.v1");
+      }catch(e){console.warn("migration skipped", e);}
+    })();
+
     function loadState(){
       try{
         const raw=localStorage.getItem(LS_KEY);
@@ -85,7 +116,7 @@
             title:String(it.title||""),
             status:STATUSES.includes(it.status)?it.status:"未着手",
             deadline:DEADLINES.includes(it.deadline)?it.deadline:"未分類（未定）",
-            note: String(it.note||"")
+            note:String(it.note||"")
           }));
         }
         return obj;
@@ -115,26 +146,131 @@
           state[genre].push({id:crypto.randomUUID(),title:newTitle.value.trim(),status:newStatus.value,deadline:newDeadline.value,note:""});
           newTitle.value="";saveState();build();
         };
+
         state[genre].forEach((it,i)=>{
           const node=itemTmpl.content.firstElementChild.cloneNode(true);
           node.dataset.status=it.status;
           node.querySelector(".title").textContent=it.title;
+
           const ss=node.querySelector(".statusSel");
           STATUSES.forEach(s=>{const o=document.createElement("option");o.textContent=o.value=s;if(s===it.status) o.selected=true;ss.appendChild(o)});
           ss.onchange=()=>{it.status=ss.value;saveState();build();};
+
           const ds=node.querySelector(".deadlineSel");
           DEADLINES.forEach(d=>{const o=document.createElement("option");o.textContent=o.value=d;if(d===it.deadline) o.selected=true;ds.appendChild(o)});
           ds.onchange=()=>{it.deadline=ds.value;saveState();};
+
           node.querySelector(".detail").onclick=()=>{location.href=`detail.html?id=${it.id}&from=index`};
+
           node.querySelector(".up").onclick=()=>{if(i>0){[state[genre][i-1],state[genre][i]]=[state[genre][i],state[genre][i-1]];saveState();build();}};
           node.querySelector(".down").onclick=()=>{if(i<state[genre].length-1){[state[genre][i+1],state[genre][i]]=[state[genre][i],state[genre][i+1]];saveState();build();}};
-          node.querySelector(".del").onclick=()=>{state[genre].splice(i,1);saveState();build();};
+          node.querySelector(".del").onclick=()=>{if(confirm("削除しますか？")){state[genre].splice(i,1);saveState();build();}};
           list.appendChild(node);
         });
+
         gridsEl.appendChild(sec);
       });
     }
 
+    // ===== CSV 取り込み（全置換/マージ） =====
+    // 簡易CSVパーサ（ダブルクオート対応）
+    function parseCSV(text){
+      const rows=[]; let row=[], field="", inQ=false;
+      for(let i=0;i<text.length;i++){
+        const c=text[i], n=text[i+1];
+        if(inQ){
+          if(c==='"' && n==='"'){ field+='"'; i++; continue; }
+          if(c==='"'){ inQ=false; continue; }
+          field+=c;
+        }else{
+          if(c==='"'){ inQ=true; continue; }
+          if(c===','){ row.push(field); field=""; continue; }
+          if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=""; continue; }
+          if(c==='\r'){ continue; }
+          field+=c;
+        }
+      }
+      row.push(field); rows.push(row);
+      return rows;
+    }
+    function headerIndex(header, names){
+      const low=header.map(h=>h.trim().toLowerCase());
+      for(const name of names){
+        const i=low.indexOf(name.toLowerCase());
+        if(i>=0) return i;
+      }
+      return -1;
+    }
+
+    document.getElementById("csvFile").onchange = async (e)=>{
+      const file=e.target.files?.[0]; if(!file) return;
+      const text=await file.text();
+      const rows=parseCSV(text).filter(r=>r.length && r.join("").trim()!=="");
+      if(rows.length===0){ alert("CSVにデータがありません"); e.target.value=""; return; }
+
+      const header=rows[0];
+      const idx = {
+        genre:   headerIndex(header, ["genre","ジャンル"]),
+        title:   headerIndex(header, ["title","項目","name"]),
+        status:  headerIndex(header, ["status","状態"]),
+        deadline:headerIndex(header, ["deadline","期限"]),
+        note:    headerIndex(header, ["note","メモ"])
+      };
+      if(idx.genre<0 || idx.title<0){
+        alert("CSVヘッダーを認識できませんでした。\n必須: genre, title / 任意: status, deadline, note");
+        e.target.value=""; return;
+      }
+
+      const replace=document.getElementById("replaceToggle").checked;
+      const next = replace ? Object.fromEntries(GENRES.map(g=>[g,[]])) : structuredClone(state);
+
+      for(let i=1;i<rows.length;i++){
+        const r=rows[i];
+        const g=(r[idx.genre]||"").trim();
+        const t=(r[idx.title]||"").trim();
+        const s=(idx.status>=0? (r[idx.status]||"").trim() : "未着手");
+        const d=(idx.deadline>=0? (r[idx.deadline]||"").trim() : "未分類（未定）");
+        const n=(idx.note>=0? (r[idx.note]||"") : "");
+
+        if(!GENRES.includes(g) || !t) continue;
+        const status = STATUSES.includes(s) ? s : (s.includes("達成")? "達成" : s.includes("継続")? "継続" : "未着手");
+        const deadline = DEADLINES.includes(d) ? d : "未分類（未定）";
+
+        const ex = next[g].find(x=>x.title===t);
+        if(ex){ ex.status=status; ex.deadline=deadline; ex.note=n; }
+        else{ next[g].push({id:crypto.randomUUID(), title:t, status, deadline, note:n}); }
+      }
+
+      state = next;
+      saveState(); build();
+      e.target.value="";
+      alert("CSV取り込みが完了しました。");
+    };
+
+    // ===== CSV 出力 =====
+    function exportCSV(){
+      const rows = [["genre","title","status","deadline","note"]];
+      for(const g of GENRES){
+        for(const it of state[g]){
+          rows.push([g, it.title, it.status, it.deadline, it.note||""]);
+        }
+      }
+      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const now = new Date();
+      const ymd = now.toISOString().slice(0,10).replace(/-/g,"");
+      a.href = url;
+      a.download = `bucketlist_${ymd}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    document.getElementById("exportCSV").onclick = exportCSV;
+
+    // ===== 全削除 =====
     document.getElementById("clearAll").onclick=()=>{
       if(confirm("全削除しますか?")){
         state=Object.fromEntries(GENRES.map(g=>[g,[]]));
