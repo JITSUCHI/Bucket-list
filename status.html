@@ -62,11 +62,31 @@
     const STATUSES=["未着手","継続","達成"];
     const LS_KEY="bucketlist.v2";
 
+    const normalizeStatus = (s) => {
+      const t = String(s||"").trim();
+      if (STATUSES.includes(t)) return t;
+      if (t.includes("達成")) return "達成";
+      if (t.includes("継続")) return "継続";
+      return "未着手";
+    };
+
     function loadState(){
       try{
         const raw=localStorage.getItem(LS_KEY);
-        if(!raw) return Object.fromEntries(GENRES.map(g=>[g,[]]));
-        return JSON.parse(raw);
+        const base = Object.fromEntries(GENRES.map(g=>[g,[]]));
+        if(!raw) return base;
+        const obj=JSON.parse(raw);
+        for(const g of GENRES){
+          const arr = Array.isArray(obj[g]) ? obj[g] : [];
+          base[g] = arr.map(it=>({
+            id:String(it.id||crypto.randomUUID()),
+            title:String(it.title||""),
+            status: normalizeStatus(it.status),
+            deadline: String(it.deadline||""),
+            note: String(it.note||"")
+          }));
+        }
+        return base;
       }catch(_){
         return Object.fromEntries(GENRES.map(g=>[g,[]]));
       }
@@ -80,9 +100,9 @@
 
     function render(){
       container.innerHTML="";
-      const status=statusSelect.value;
+      const selected=statusSelect.value;
 
-      if(!status){
+      if(!selected){
         const msg=document.createElement("div");
         msg.className="muted";
         msg.textContent="状態を選択すると、その状態の項目だけを表示します。";
@@ -90,15 +110,16 @@
         return;
       }
 
-      // 1カード（選んだ状態のみ）
       const sec=cardTmpl.content.firstElementChild.cloneNode(true);
-      sec.querySelector("h2").textContent=status;
+      sec.querySelector("h2").textContent=selected;
       const list=sec.querySelector(".list");
 
       const items=[];
       for(const g of GENRES){
         (state[g]||[]).forEach(it=>{
-          if(it.status===status) items.push({...it, genre:g});
+          if (normalizeStatus(it.status) === selected){
+            items.push({...it, genre:g});
+          }
         });
       }
 
@@ -110,6 +131,20 @@
       }else{
         items.forEach(it=>{
           const node=itemTmpl.content.firstElementChild.cloneNode(true);
-          node.dataset.status=it.status;
+          node.dataset.status=normalizeStatus(it.status);
           node.querySelector(".title").textContent=`[${it.genre}] ${it.title}`;
-          node.querySelector(".detail").onclick=()=>{ locat
+          node.querySelector(".detail").onclick=()=>{ location.href=`detail.html?id=${it.id}&from=status`; };
+          list.appendChild(node);
+        });
+      }
+
+      container.appendChild(sec);
+    }
+
+    // 初期は未選択
+    statusSelect.value="";
+    statusSelect.addEventListener("change", render);
+    render();
+  </script>
+</body>
+</html>
