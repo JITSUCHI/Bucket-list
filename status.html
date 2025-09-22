@@ -3,46 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BucketList Status — 状況別ビュー</title>
+  <title>状況別ビュー</title>
   <style>
     body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",sans-serif;background:#f4f6f8;color:#333}
-    header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #ddd;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 4px rgba(0,0,0,.05)}
-    h1{font-size:18px;margin:0 8px 0 0;font-weight:700}
-    a{color:#2979ff;text-decoration:none}
+    header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #ddd;padding:12px 16px;display:flex;gap:12px;align-items:center}
     .btn{appearance:none;border:none;background:#e9ecf2;color:#333;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid #ccc;font-size:14px}
-    main{padding:16px;max-width:860px;margin:0 auto}
-    .grid{display:flex;flex-direction:column;gap:20px}
-    .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
-    .card h2{font-size:15px;color:#555;margin:0 0 12px}
+    .grid{display:flex;flex-direction:column;gap:20px;padding:16px;max-width:860px;margin:0 auto}
+    .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px}
     .list{display:flex;flex-direction:column;gap:6px}
     .item{display:flex;gap:8px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:8px;padding:6px}
-    .title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .title{flex:1}
     .item[data-status="継続"] .title{color:#2e7d32;font-weight:600}
     .item[data-status="達成"] .title{text-decoration:line-through;color:#777}
-    .badge{font-size:12px;color:#333;border:1px solid #ccc;border-radius:999px;padding:2px 8px;background:#f9f9f9}
-    .filters{display:flex;flex-wrap:wrap;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid #ddd;align-items:center}
-    .filters label{display:flex;align-items:center;gap:6px;font-size:13px;color:#555}
-    .chips{display:flex;flex-wrap:wrap;gap:8px}
-    .chip{font-size:12px;border:1px solid #ccc;background:#fff;border-radius:999px;padding:2px 10px;color:#555}
-    .muted{color:#666;font-size:12px}
   </style>
 </head>
 <body>
   <header>
     <h1>状況別ビュー</h1>
-    <div style="margin-left:auto">
-      <a class="btn" href="index.html">← Indexへ戻る</a>
-    </div>
+    <a class="btn" href="index.html">← Indexへ戻る</a>
   </header>
-
-  <section class="filters">
-    <div id="statusFilters" class="chips"></div>
-    <div style="margin-left:auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-      <label><input type="checkbox" id="groupByGenre"> ジャンル別にグループ化</label>
-      <label><input type="checkbox" id="showDeadline"> 期限バッジを表示</label>
-    </div>
-  </section>
-
   <main>
     <div class="grid" id="statusGrids"></div>
   </main>
@@ -57,127 +36,47 @@
   <template id="itemTmpl">
     <div class="item">
       <div class="title"></div>
-      <div class="badge genre"></div>
-      <div class="badge deadline" style="display:none"></div>
+      <button class="detail btn">詳細</button>
     </div>
   </template>
 
   <script>
     const GENRES=["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
     const STATUSES=["未着手","継続","達成"];
-    const DEADLINES=["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
     const LS_KEY="bucketlist.v2";
 
-    // v2をロード。なければ空データ
     function loadState(){
-      try{
-        const raw=localStorage.getItem(LS_KEY);
-        if(!raw) return Object.fromEntries(GENRES.map(g=>[g,[]]));
-        const obj=JSON.parse(raw);
-        for(const g of GENRES){
-          if(!obj[g]) obj[g]=[];
-          obj[g]=obj[g].map(it=>({
-            id:String(it.id||crypto.randomUUID()),
-            title:String(it.title||""),
-            status:STATUSES.includes(it.status)?it.status:"未着手",
-            deadline:DEADLINES.includes(it.deadline)?it.deadline:"未分類（未定）"
-          }));
-        }
-        return obj;
-      }catch(e){ return Object.fromEntries(GENRES.map(g=>[g,[]])); }
+      const raw=localStorage.getItem(LS_KEY);
+      if(!raw) return Object.fromEntries(GENRES.map(g=>[g,[]]));
+      return JSON.parse(raw);
     }
 
-    const state = loadState();
-
+    const state=loadState();
     const gridsEl=document.getElementById("statusGrids");
     const cardTmpl=document.getElementById("statusCardTmpl");
     const itemTmpl=document.getElementById("itemTmpl");
-    const filtersEl=document.getElementById("statusFilters");
-    const groupByGenreEl=document.getElementById("groupByGenre");
-    const showDeadlineEl=document.getElementById("showDeadline");
-
-    // 選択されたステータスのみ表示
-    const activeStatuses=new Set(STATUSES);
-
-    function buildFilters(){
-      filtersEl.innerHTML="";
-      STATUSES.forEach(s=>{
-        const chip=document.createElement("label");
-        chip.className="chip";
-        const cb=document.createElement("input");
-        cb.type="checkbox"; cb.checked=true; cb.dataset.status=s;
-        cb.onchange=()=>{
-          if(cb.checked) activeStatuses.add(s); else activeStatuses.delete(s);
-          render();
-        };
-        chip.appendChild(cb);
-        chip.append(" "+s);
-        filtersEl.appendChild(chip);
-      });
-      groupByGenreEl.onchange=render;
-      showDeadlineEl.onchange=render;
-    }
 
     function render(){
       gridsEl.innerHTML="";
-
-      // フィルターで外されたステータスはカードごと非表示
       STATUSES.forEach(status=>{
-        if(!activeStatuses.has(status)) return;
-
-        // このステータスのアイテムを収集
         const items=[];
         for(const g of GENRES){
-          for(const it of state[g]){
-            if(it.status!==status) continue;
-            items.push({...it, genre:g});
-          }
+          state[g].forEach(it=>{if(it.status===status) items.push({...it,genre:g})});
         }
-        if(items.length===0) return; // 結果がないステータスは出さない
-
+        if(items.length===0) return;
         const sec=cardTmpl.content.firstElementChild.cloneNode(true);
         sec.querySelector("h2").textContent=status;
         const list=sec.querySelector(".list");
-
-        if(groupByGenreEl.checked){
-          // ジャンルごとに小見出しを作って並べる
-          GENRES.forEach(g=>{
-            const sub=items.filter(i=>i.genre===g);
-            if(sub.length===0) return;
-            const subTitle=document.createElement("div");
-            subTitle.style="margin:6px 2px;color:#777;font-size:12px";
-            subTitle.textContent="— "+g;
-            list.appendChild(subTitle);
-            sub.forEach(it=> list.appendChild(renderItem(it)));
-          });
-        }else{
-          items.forEach(it=> list.appendChild(renderItem(it)));
-        }
-
+        items.forEach(it=>{
+          const node=itemTmpl.content.firstElementChild.cloneNode(true);
+          node.dataset.status=it.status;
+          node.querySelector(".title").textContent=`[${it.genre}] ${it.title}`;
+          node.querySelector(".detail").onclick=()=>{location.href=`detail.html?id=${it.id}&from=status`};
+          list.appendChild(node);
+        });
         gridsEl.appendChild(sec);
       });
-
-      // 何も選択されてない、または結果ゼロのときの案内
-      if(!gridsEl.children.length){
-        const empty=document.createElement("div");
-        empty.className="muted";
-        empty.textContent="表示する項目がありません（上部のステータスを選択してください）。";
-        gridsEl.appendChild(empty);
-      }
     }
-
-    function renderItem(it){
-      const node=itemTmpl.content.firstElementChild.cloneNode(true);
-      node.dataset.status=it.status;
-      node.querySelector(".title").textContent=it.title;
-      node.querySelector(".genre").textContent=it.genre;
-      const dl = node.querySelector(".deadline");
-      dl.textContent = it.deadline;
-      dl.style.display = showDeadlineEl.checked ? "inline-block" : "none";
-      return node;
-    }
-
-    buildFilters();
     render();
   </script>
 </body>
