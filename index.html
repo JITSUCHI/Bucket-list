@@ -3,90 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BucketList Manager — Index</title>
+  <title>BucketList</title>
   <style>
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",sans-serif;
-      background:#f4f6f8;
-      color:#333;
-    }
-    header{
-      position:sticky;top:0;z-index:10;
-      background:#fff;
-      border-bottom:1px solid #ddd;
-      padding:12px 16px;
-      display:flex;gap:12px;align-items:center;flex-wrap:wrap;
-      box-shadow:0 2px 4px rgba(0,0,0,.05);
-    }
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",sans-serif;background:#f4f6f8;color:#333}
+    header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #ddd;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 4px rgba(0,0,0,.05)}
     h1{font-size:18px;margin:0 8px 0 0;font-weight:700}
-    .pill{font-size:12px;color:#666;border:1px dashed #bbb;padding:4px 8px;border-radius:999px;}
-    main{padding:16px;max-width:860px;margin:0 auto}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
-    .btn{appearance:none;border:none;background:#e9ecf2;color:#333;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid #ccc;font-size:14px}
-    .btn.primary{background:#2979ff;color:#fff;border-color:#2979ff}
-    .btn.danger{background:#ff5252;color:#fff;border-color:#ff5252}
-    .btn.ghost{background:transparent;border:none;color:#2979ff}
-    input,select{background:#fff;color:#333;border:1px solid #ccc;padding:6px 8px;border-radius:6px;outline:none;font-size:14px}
-    input[type="text"]{flex:1;min-width:200px}
     a{color:#2979ff;text-decoration:none}
+    .btn{appearance:none;border:none;background:#e9ecf2;color:#333;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid #ccc;font-size:14px}
+    .btn.ghost{background:#fff}
+    .btn.danger{background:#e53935;color:#fff;border:none}
+    main{padding:16px;max-width:860px;margin:0 auto}
     .grid{display:flex;flex-direction:column;gap:20px}
     .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
     .card h2{font-size:15px;color:#555;margin:0 0 12px}
-    .add-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-    .list{display:flex;flex-direction:column;gap:6px;min-height:60px}
+    .list{display:flex;flex-direction:column;gap:6px}
     .item{display:flex;gap:8px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:8px;padding:6px}
-    .drag{width:18px;height:18px;cursor:grab;color:#999}
     .title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .item.is-ongoing .title{color:#2e7d32;font-weight:600}
-    .item.is-done .title{text-decoration:line-through;color:#777}
-    .status,.deadline{font-size:13px}
-    .del{width:28px;height:28px;border-radius:6px;border:none;background:#eee;color:#c00;cursor:pointer;font-weight:bold}
-    .empty{color:#888;font-size:13px;padding:8px;text-align:center}
-    .meta{color:#666;font-size:12px;margin-top:6px}
-    footer{color:#666;font-size:12px;text-align:center;padding:20px}
+    .item[data-status="継続"] .title{color:#2e7d32;font-weight:600}
+    .item[data-status="達成"] .title{text-decoration:line-through;color:#777}
+    select,input[type=text]{font-size:14px}
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+    .toolbar input[type=file]{display:none}
+    .badge{font-size:12px;color:#333;border:1px solid #ccc;border-radius:999px;padding:2px 8px;background:#f9f9f9}
   </style>
 </head>
 <body>
   <header>
-    <h1>BucketList Manager</h1>
-    <span class="pill">ジャンル別管理 / CSV取り込み / 期限タグ</span>
-    <div class="toolbar">
+    <h1>BucketList</h1>
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
       <a class="btn ghost" href="progress.html">進捗（期限別）</a>
-      <label class="btn">
-        CSV取り込み<input id="csvInput" type="file" accept=".csv" style="display:none">
-      </label>
+      <a class="btn ghost" href="status.html">状況別</a>
+      <label class="btn"><input id="csvFile" type="file" accept=".csv">CSV取り込み</label>
       <label style="font-size:12px;color:#555"><input id="replaceToggle" type="checkbox"> 全置換</label>
       <button id="clearAll" class="btn danger">全削除</button>
     </div>
   </header>
+
   <main>
-    <div id="genreGrids" class="grid"></div>
-    <footer>状態：未着手 / <span style="color:#2e7d32">継続</span> / <s>達成</s>　|　期限：1か月以内〜未分類</footer>
+    <div class="grid" id="genreGrids"></div>
   </main>
 
-  <template id="genreCardTmpl">
+  <template id="cardTmpl">
     <section class="card">
       <h2></h2>
-      <div class="add-row">
-        <input type="text" placeholder="やりたいこと" class="newTitle">
-        <select class="newStatus"><option>未着手</option><option>継続</option><option>達成</option></select>
+      <div class="toolbar">
+        <input type="text" class="newTitle" placeholder="項目を追加…"/>
+        <select class="newStatus"></select>
         <select class="newDeadline"></select>
-        <button class="btn primary addBtn">追加</button>
+        <button class="add btn">追加</button>
       </div>
       <div class="list"></div>
-      <div class="empty">まだ項目がありません</div>
-      <div class="meta"></div>
     </section>
   </template>
 
   <template id="itemTmpl">
-    <div class="item" draggable="true">
-      <div class="drag">≡</div>
+    <div class="item">
       <div class="title"></div>
-      <select class="status"><option>未着手</option><option>継続</option><option>達成</option></select>
-      <select class="deadline"></select>
-      <button class="del">×</button>
+      <select class="statusSel"></select>
+      <select class="deadlineSel"></select>
+      <button class="up btn">↑</button>
+      <button class="down btn">↓</button>
+      <button class="del btn danger">✕</button>
     </div>
   </template>
 
@@ -96,10 +73,34 @@
     const DEADLINES=["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
     const LS_KEY="bucketlist.v2";
 
-    const normalizeStatus=s=>STATUSES.includes(s)?s:"未着手";
-    const normalizeDeadline=d=>DEADLINES.includes(d)?d:"未分類（未定）";
+    // one-time migration v1->v2
+    (function oneTimeMigrateV1toV2(){
+      try{
+        const v2raw=localStorage.getItem(LS_KEY);
+        if(v2raw){
+          const v2obj=JSON.parse(v2raw);
+          const hasData=Object.values(v2obj||{}).some(arr=>Array.isArray(arr)&&arr.length>0);
+          if(hasData) return;
+        }
+        const v1raw=localStorage.getItem("bucketlist.v1");
+        if(!v1raw) return;
+        const v1=JSON.parse(v1raw);
+        const v2=Object.fromEntries(GENRES.map(g=>[g,[]]));
+        for(const g of GENRES){
+          const arr=Array.isArray(v1?.[g])?v1[g]:[];
+          for(const it of arr){
+            if(!it||!it.title) continue;
+            const sRaw=String(it.status||"");
+            const status=sRaw.includes("達成")?"達成":sRaw.includes("継続")?"継続":(STATUSES.includes(sRaw)?sRaw:"未着手");
+            const deadline=DEADLINES.includes(it.deadline)?it.deadline:"未分類（未定）";
+            v2[g].push({id:crypto.randomUUID(),title:String(it.title),status,deadline});
+          }
+        }
+        localStorage.setItem(LS_KEY, JSON.stringify(v2));
+        localStorage.removeItem("bucketlist.v1");
+      }catch(e){console.warn("migration failed",e);}
+    })();
 
-    let state=loadState();
     function loadState(){
       try{
         const raw=localStorage.getItem(LS_KEY);
@@ -108,70 +109,85 @@
         for(const g of GENRES){
           if(!obj[g]) obj[g]=[];
           obj[g]=obj[g].map(it=>({
-            id:it.id||crypto.randomUUID(),
+            id:String(it.id||crypto.randomUUID()),
             title:String(it.title||""),
-            status:normalizeStatus(it.status),
-            deadline:normalizeDeadline(it.deadline)
+            status:STATUSES.includes(it.status)?it.status:"未着手",
+            deadline:DEADLINES.includes(it.deadline)?it.deadline:"未分類（未定）"
           }));
         }
         return obj;
       }catch(e){return Object.fromEntries(GENRES.map(g=>[g,[]]));}
     }
-    function saveState(){localStorage.setItem(LS_KEY,JSON.stringify(state));}
+    function saveState(){localStorage.setItem(LS_KEY, JSON.stringify(state));}
 
-    const grids=document.getElementById("genreGrids");
-    const tmpl=document.getElementById("genreCardTmpl");
+    let state=loadState();
+
+    const gridsEl=document.getElementById("genreGrids");
+    const cardTmpl=document.getElementById("cardTmpl");
     const itemTmpl=document.getElementById("itemTmpl");
 
     function build(){
-      grids.innerHTML="";
-      GENRES.forEach(g=>{
-        const frag=tmpl.content.cloneNode(true);
-        const root=frag.querySelector("section"); root.dataset.genre=g;
-        root.querySelector("h2").textContent=g;
-        const list=root.querySelector(".list"); const empty=root.querySelector(".empty"); const meta=root.querySelector(".meta");
-        const addBtn=root.querySelector(".addBtn"); const newTitle=root.querySelector(".newTitle"); const newStatus=root.querySelector(".newStatus"); const newDeadline=root.querySelector(".newDeadline");
-        fillDeadline(newDeadline);
-        addBtn.onclick=()=>{
-          const t=newTitle.value.trim(); if(!t) return;
-          state[g].push({id:crypto.randomUUID(),title:t,status:normalizeStatus(newStatus.value),deadline:normalizeDeadline(newDeadline.value)});
-          newTitle.value=""; newStatus.value="未着手"; newDeadline.value="未分類（未定）";
-          renderList(g,list,empty,meta); saveState();
+      gridsEl.innerHTML="";
+      GENRES.forEach(genre=>{
+        const sec=cardTmpl.content.firstElementChild.cloneNode(true);
+        sec.querySelector("h2").textContent=genre;
+        const list=sec.querySelector(".list");
+        const newTitle=sec.querySelector(".newTitle");
+        const newStatus=sec.querySelector(".newStatus");
+        const newDeadline=sec.querySelector(".newDeadline");
+        STATUSES.forEach(s=>{const o=document.createElement("option");o.textContent=o.value=s;newStatus.appendChild(o)});
+        DEADLINES.forEach(d=>{const o=document.createElement("option");o.textContent=o.value=d;newDeadline.appendChild(o)});
+        sec.querySelector(".add").onclick=()=>{
+          if(!newTitle.value.trim()) return;
+          state[genre].push({id:crypto.randomUUID(),title:newTitle.value.trim(),status:newStatus.value,deadline:newDeadline.value});
+          newTitle.value="";saveState();build();
         };
-        renderList(g,list,empty,meta);
-        grids.appendChild(root);
+        state[genre].forEach((it,i)=>{
+          const node=itemTmpl.content.firstElementChild.cloneNode(true);
+          node.dataset.status=it.status;
+          node.querySelector(".title").textContent=it.title;
+          const ss=node.querySelector(".statusSel");
+          STATUSES.forEach(s=>{const o=document.createElement("option");o.textContent=o.value=s;if(s===it.status) o.selected=true;ss.appendChild(o)});
+          ss.onchange=()=>{it.status=ss.value;saveState();build();};
+          const ds=node.querySelector(".deadlineSel");
+          DEADLINES.forEach(d=>{const o=document.createElement("option");o.textContent=o.value=d;if(d===it.deadline) o.selected=true;ds.appendChild(o)});
+          ds.onchange=()=>{it.deadline=ds.value;saveState();};
+          node.querySelector(".up").onclick=()=>{if(i>0){[state[genre][i-1],state[genre][i]]=[state[genre][i],state[genre][i-1]];saveState();build();}};
+          node.querySelector(".down").onclick=()=>{if(i<state[genre].length-1){[state[genre][i+1],state[genre][i]]=[state[genre][i],state[genre][i+1]];saveState();build();}};
+          node.querySelector(".del").onclick=()=>{state[genre].splice(i,1);saveState();build();};
+          list.appendChild(node);
+        });
+        gridsEl.appendChild(sec);
       });
-    }
-    function fillDeadline(sel){sel.innerHTML="";DEADLINES.forEach(d=>{const o=document.createElement("option");o.text=d;sel.add(o);});sel.value="未分類（未定）";}
-    function applyStyles(node,status){node.classList.toggle("is-ongoing",status==="継続");node.classList.toggle("is-done",status==="達成");}
-    function renderList(g,list,empty,meta){
-      list.innerHTML=""; const items=state[g]; empty.style.display=items.length?"none":"block";
-      items.forEach(it=>{
-        const n=itemTmpl.content.firstElementChild.cloneNode(true);
-        n.dataset.id=it.id; applyStyles(n,it.status);
-        n.querySelector(".title").textContent=it.title;
-        const selS=n.querySelector(".status"); selS.value=it.status;
-        selS.onchange=()=>{it.status=normalizeStatus(selS.value);applyStyles(n,it.status);saveState();};
-        const selD=n.querySelector(".deadline"); fillDeadline(selD); selD.value=it.deadline; selD.onchange=()=>{it.deadline=normalizeDeadline(selD.value);saveState();};
-        n.querySelector(".del").onclick=()=>{if(confirm("削除しますか?")){state[g]=state[g].filter(x=>x.id!==it.id);renderList(g,list,empty,meta);saveState();}};
-        list.appendChild(n);
-      });
-      meta.textContent=`件数:${items.length}`;
     }
 
-    document.getElementById("csvInput").addEventListener("change",async e=>{
-      const f=e.target.files[0]; if(!f) return;
-      const rep=document.getElementById("replaceToggle").checked;
-      const text=await f.text(); const rows=text.split(/\r?\n/).map(r=>r.split(","));
-      if(rep) state=Object.fromEntries(GENRES.map(g=>[g,[]]));
-      rows.forEach(r=>{
-        if(r.length<2) return; const g=r[0].trim(),t=r[1].trim(); if(!GENRES.includes(g)||!t) return;
-        const s=normalizeStatus(r[2]); const d=normalizeDeadline(r[3]);
-        const ex=state[g].find(x=>x.title===t); if(ex){ex.status=s;ex.deadline=d;}else{state[g].push({id:crypto.randomUUID(),title:t,status:s,deadline:d});}
-      });
-      saveState(); build(); e.target.value="";
-    });
-    document.getElementById("clearAll").onclick=()=>{if(confirm("全削除しますか?")){state=Object.fromEntries(GENRES.map(g=>[g,[]]));saveState();build();}};
+    document.getElementById("clearAll").onclick=()=>{
+      if(confirm("全削除しますか?")){
+        state=Object.fromEntries(GENRES.map(g=>[g,[]]));
+        saveState();build();
+      }
+    };
+
+    document.getElementById("csvFile").onchange=e=>{
+      const file=e.target.files[0];
+      if(!file) return;
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const lines=ev.target.result.split(/\r?\n/).filter(l=>l.trim());
+        const headers=lines[0].split(",");
+        const idxGenre=headers.indexOf("genre"), idxTitle=headers.indexOf("title"), idxStatus=headers.indexOf("status"), idxDeadline=headers.indexOf("deadline");
+        const parsed=Object.fromEntries(GENRES.map(g=>[g,[]]));
+        for(let i=1;i<lines.length;i++){
+          const cols=lines[i].split(",");
+          if(!cols[idxGenre]||!cols[idxTitle]) continue;
+          parsed[cols[idxGenre]].push({id:crypto.randomUUID(),title:cols[idxTitle],status:STATUSES.includes(cols[idxStatus])?cols[idxStatus]:"未着手",deadline:DEADLINES.includes(cols[idxDeadline])?cols[idxDeadline]:"未分類（未定）"});
+        }
+        if(document.getElementById("replaceToggle").checked){state=parsed;}
+        else{for(const g of GENRES){parsed[g].forEach(it=>{const ex=state[g].find(x=>x.title===it.title);if(ex){ex.status=it.status;ex.deadline=it.deadline;}else{state[g].push(it);}})}}
+        saveState();build();
+      };
+      reader.readAsText(file,"utf-8");
+    };
 
     build();
   </script>
