@@ -24,7 +24,6 @@
     select,input[type=text]{font-size:14px}
     .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
     .toolbar input[type=file]{display:none}
-    .badge{font-size:12px;color:#333;border:1px solid #ccc;border-radius:999px;padding:2px 8px;background:#f9f9f9}
   </style>
 </head>
 <body>
@@ -61,6 +60,7 @@
       <div class="title"></div>
       <select class="statusSel"></select>
       <select class="deadlineSel"></select>
+      <button class="detail btn">詳細</button>
       <button class="up btn">↑</button>
       <button class="down btn">↓</button>
       <button class="del btn danger">✕</button>
@@ -73,34 +73,6 @@
     const DEADLINES=["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
     const LS_KEY="bucketlist.v2";
 
-    // one-time migration v1->v2
-    (function oneTimeMigrateV1toV2(){
-      try{
-        const v2raw=localStorage.getItem(LS_KEY);
-        if(v2raw){
-          const v2obj=JSON.parse(v2raw);
-          const hasData=Object.values(v2obj||{}).some(arr=>Array.isArray(arr)&&arr.length>0);
-          if(hasData) return;
-        }
-        const v1raw=localStorage.getItem("bucketlist.v1");
-        if(!v1raw) return;
-        const v1=JSON.parse(v1raw);
-        const v2=Object.fromEntries(GENRES.map(g=>[g,[]]));
-        for(const g of GENRES){
-          const arr=Array.isArray(v1?.[g])?v1[g]:[];
-          for(const it of arr){
-            if(!it||!it.title) continue;
-            const sRaw=String(it.status||"");
-            const status=sRaw.includes("達成")?"達成":sRaw.includes("継続")?"継続":(STATUSES.includes(sRaw)?sRaw:"未着手");
-            const deadline=DEADLINES.includes(it.deadline)?it.deadline:"未分類（未定）";
-            v2[g].push({id:crypto.randomUUID(),title:String(it.title),status,deadline});
-          }
-        }
-        localStorage.setItem(LS_KEY, JSON.stringify(v2));
-        localStorage.removeItem("bucketlist.v1");
-      }catch(e){console.warn("migration failed",e);}
-    })();
-
     function loadState(){
       try{
         const raw=localStorage.getItem(LS_KEY);
@@ -112,7 +84,8 @@
             id:String(it.id||crypto.randomUUID()),
             title:String(it.title||""),
             status:STATUSES.includes(it.status)?it.status:"未着手",
-            deadline:DEADLINES.includes(it.deadline)?it.deadline:"未分類（未定）"
+            deadline:DEADLINES.includes(it.deadline)?it.deadline:"未分類（未定）",
+            note: String(it.note||"")
           }));
         }
         return obj;
@@ -139,7 +112,7 @@
         DEADLINES.forEach(d=>{const o=document.createElement("option");o.textContent=o.value=d;newDeadline.appendChild(o)});
         sec.querySelector(".add").onclick=()=>{
           if(!newTitle.value.trim()) return;
-          state[genre].push({id:crypto.randomUUID(),title:newTitle.value.trim(),status:newStatus.value,deadline:newDeadline.value});
+          state[genre].push({id:crypto.randomUUID(),title:newTitle.value.trim(),status:newStatus.value,deadline:newDeadline.value,note:""});
           newTitle.value="";saveState();build();
         };
         state[genre].forEach((it,i)=>{
@@ -152,6 +125,7 @@
           const ds=node.querySelector(".deadlineSel");
           DEADLINES.forEach(d=>{const o=document.createElement("option");o.textContent=o.value=d;if(d===it.deadline) o.selected=true;ds.appendChild(o)});
           ds.onchange=()=>{it.deadline=ds.value;saveState();};
+          node.querySelector(".detail").onclick=()=>{location.href=`detail.html?id=${it.id}&from=index`};
           node.querySelector(".up").onclick=()=>{if(i>0){[state[genre][i-1],state[genre][i]]=[state[genre][i],state[genre][i-1]];saveState();build();}};
           node.querySelector(".down").onclick=()=>{if(i<state[genre].length-1){[state[genre][i+1],state[genre][i]]=[state[genre][i],state[genre][i+1]];saveState();build();}};
           node.querySelector(".del").onclick=()=>{state[genre].splice(i,1);saveState();build();};
@@ -166,27 +140,6 @@
         state=Object.fromEntries(GENRES.map(g=>[g,[]]));
         saveState();build();
       }
-    };
-
-    document.getElementById("csvFile").onchange=e=>{
-      const file=e.target.files[0];
-      if(!file) return;
-      const reader=new FileReader();
-      reader.onload=ev=>{
-        const lines=ev.target.result.split(/\r?\n/).filter(l=>l.trim());
-        const headers=lines[0].split(",");
-        const idxGenre=headers.indexOf("genre"), idxTitle=headers.indexOf("title"), idxStatus=headers.indexOf("status"), idxDeadline=headers.indexOf("deadline");
-        const parsed=Object.fromEntries(GENRES.map(g=>[g,[]]));
-        for(let i=1;i<lines.length;i++){
-          const cols=lines[i].split(",");
-          if(!cols[idxGenre]||!cols[idxTitle]) continue;
-          parsed[cols[idxGenre]].push({id:crypto.randomUUID(),title:cols[idxTitle],status:STATUSES.includes(cols[idxStatus])?cols[idxStatus]:"未着手",deadline:DEADLINES.includes(cols[idxDeadline])?cols[idxDeadline]:"未分類（未定）"});
-        }
-        if(document.getElementById("replaceToggle").checked){state=parsed;}
-        else{for(const g of GENRES){parsed[g].forEach(it=>{const ex=state[g].find(x=>x.title===it.title);if(ex){ex.status=it.status;ex.deadline=it.deadline;}else{state[g].push(it);}})}}
-        saveState();build();
-      };
-      reader.readAsText(file,"utf-8");
     };
 
     build();
