@@ -8,25 +8,42 @@
     body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",sans-serif;background:#f4f6f8;color:#333}
     header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #ddd;padding:12px 16px;display:flex;gap:12px;align-items:center}
     .btn{appearance:none;border:none;background:#e9ecf2;color:#333;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid #ccc;font-size:14px}
-    .grid{display:flex;flex-direction:column;gap:20px;padding:16px;max-width:860px;margin:0 auto}
+    main{padding:16px;max-width:860px;margin:0 auto}
+    .controls{background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+    select{font-size:14px;padding:6px 10px}
+    .grid{display:flex;flex-direction:column;gap:20px}
     .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px}
+    .card h2{font-size:15px;color:#555;margin:0 0 12px}
     .list{display:flex;flex-direction:column;gap:6px}
     .item{display:flex;gap:8px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:8px;padding:6px}
     .title{flex:1}
     .item[data-status="継続"] .title{color:#2e7d32;font-weight:600}
     .item[data-status="達成"] .title{text-decoration:line-through;color:#777}
+    .muted{color:#666;font-size:13px}
   </style>
 </head>
 <body>
   <header>
-    <h1>状況別ビュー</h1>
+    <h1 style="font-size:18px;margin:0">状況別ビュー</h1>
     <a class="btn" href="index.html">← Indexへ戻る</a>
   </header>
+
   <main>
-    <div class="grid" id="statusGrids"></div>
+    <div class="controls">
+      <label for="statusSelect">状態で絞り込み：</label>
+      <select id="statusSelect" aria-label="状態を選択">
+        <option value="">（状態を選択）</option>
+        <option value="未着手">未着手</option>
+        <option value="継続">継続</option>
+        <option value="達成">達成</option>
+      </select>
+      <span class="muted">※ 選んだ状態のみを表示。初期は未選択です。</span>
+    </div>
+
+    <div id="container" class="grid"></div>
   </main>
 
-  <template id="statusCardTmpl">
+  <template id="cardTmpl">
     <section class="card">
       <h2></h2>
       <div class="list"></div>
@@ -46,38 +63,53 @@
     const LS_KEY="bucketlist.v2";
 
     function loadState(){
-      const raw=localStorage.getItem(LS_KEY);
-      if(!raw) return Object.fromEntries(GENRES.map(g=>[g,[]]));
-      return JSON.parse(raw);
+      try{
+        const raw=localStorage.getItem(LS_KEY);
+        if(!raw) return Object.fromEntries(GENRES.map(g=>[g,[]]));
+        return JSON.parse(raw);
+      }catch(_){
+        return Object.fromEntries(GENRES.map(g=>[g,[]]));
+      }
     }
 
     const state=loadState();
-    const gridsEl=document.getElementById("statusGrids");
-    const cardTmpl=document.getElementById("statusCardTmpl");
+    const container=document.getElementById("container");
+    const statusSelect=document.getElementById("statusSelect");
+    const cardTmpl=document.getElementById("cardTmpl");
     const itemTmpl=document.getElementById("itemTmpl");
 
     function render(){
-      gridsEl.innerHTML="";
-      STATUSES.forEach(status=>{
-        const items=[];
-        for(const g of GENRES){
-          state[g].forEach(it=>{if(it.status===status) items.push({...it,genre:g})});
-        }
-        if(items.length===0) return;
-        const sec=cardTmpl.content.firstElementChild.cloneNode(true);
-        sec.querySelector("h2").textContent=status;
-        const list=sec.querySelector(".list");
+      container.innerHTML="";
+      const status=statusSelect.value;
+
+      if(!status){
+        const msg=document.createElement("div");
+        msg.className="muted";
+        msg.textContent="状態を選択すると、その状態の項目だけを表示します。";
+        container.appendChild(msg);
+        return;
+      }
+
+      // 1カード（選んだ状態のみ）
+      const sec=cardTmpl.content.firstElementChild.cloneNode(true);
+      sec.querySelector("h2").textContent=status;
+      const list=sec.querySelector(".list");
+
+      const items=[];
+      for(const g of GENRES){
+        (state[g]||[]).forEach(it=>{
+          if(it.status===status) items.push({...it, genre:g});
+        });
+      }
+
+      if(items.length===0){
+        const empty=document.createElement("div");
+        empty.className="muted";
+        empty.textContent="該当する項目がありません。";
+        list.appendChild(empty);
+      }else{
         items.forEach(it=>{
           const node=itemTmpl.content.firstElementChild.cloneNode(true);
           node.dataset.status=it.status;
           node.querySelector(".title").textContent=`[${it.genre}] ${it.title}`;
-          node.querySelector(".detail").onclick=()=>{location.href=`detail.html?id=${it.id}&from=status`};
-          list.appendChild(node);
-        });
-        gridsEl.appendChild(sec);
-      });
-    }
-    render();
-  </script>
-</body>
-</html>
+          node.querySelector(".detail").onclick=()=>{ locat
