@@ -33,14 +33,50 @@
     .filters{display:flex;flex-wrap:wrap;gap:12px;padding:12px 16px;background:#fff;border-bottom:1px solid #ddd}
     .filters label{display:flex;align-items:center;gap:6px;font-size:13px;color:#555}
     .muted{color:#666;font-size:12px}
+    .who{margin-left:auto;color:#666;font-size:12px}
   </style>
+
+  <!-- Firebase SDK（index.html/detail.html と同じ設定） -->
+  <script type="module">
+    const firebaseConfig = {
+      apiKey: "AIzaSyBMURao1Asl1NyFzgWmRoIWKNKep6Wlz8s",
+      authDomain: "bucketlist-4fd82.firebaseapp.com",
+      projectId: "bucketlist-4fd82",
+      storageBucket: "bucketlist-4fd82.firebasestorage.app",
+      messagingSenderId: "843717902501",
+      appId: "1:843717902501:web:8499a2c78e414716038d4c",
+      measurementId: "G-PGQPCCND2D"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getAuth, GoogleAuthProvider,
+      signInWithPopup, signInWithRedirect, getRedirectResult,
+      signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    // 共有
+    window.__fb = {
+      app, auth, db,
+      GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+      signOut, onAuthStateChanged, doc, getDoc, setDoc
+    };
+  </script>
 </head>
 <body>
   <header>
     <h1>期限別ビュー</h1>
-    <div style="margin-left:auto">
-      <a class="btn" href="index.html">← Indexへ戻る</a>
-    </div>
+    <a class="btn" href="index.html">← Indexへ戻る</a>
+    <span class="who" id="whoami"></span>
+    <button id="signin" class="btn" style="margin-left:auto">Googleでログイン</button>
+    <button id="signout" class="btn" style="display:none">ログアウト</button>
   </header>
 
   <section class="filters">
@@ -68,37 +104,64 @@
     </div>
   </template>
 
-  <script>
+  <script type="module">
+    // ===== 定数 / 共通 =====
     const GENRES=["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
     const STATUSES=["未着手","継続","達成"];
     const DEADLINES=["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
     const LS_KEY="bucketlist.v2";
 
-    let state=loadState();
-    function loadState(){
+    const whoami=document.getElementById("whoami");
+    const signinBtn=document.getElementById("signin");
+    const signoutBtn=document.getElementById("signout");
+
+    function emptyState(){ return Object.fromEntries(GENRES.map(g=>[g,[]])); }
+    function normalizeState(obj){
+      const s=emptyState();
+      for(const g of GENRES){
+        const arr = Array.isArray(obj?.[g]) ? obj[g] : [];
+        s[g]=arr.map(it=>({
+          id:String(it.id||crypto.randomUUID()),
+          title:String(it.title||""),
+          status: STATUSES.includes(it.status)? it.status :
+                  (String(it.status||"").includes("達成")?"達成":String(it.status||"").includes("継続")?"継続":"未着手"),
+          deadline: DEADLINES.includes(it.deadline)? it.deadline : "未分類（未定）",
+          note:String(it.note||"")
+        }));
+      }
+      return s;
+    }
+    function loadLocal(){
       try{
-        const raw=localStorage.getItem(LS_KEY); if(!raw) return Object.fromEntries(GENRES.map(g=>[g,[]]));
-        const obj=JSON.parse(raw);
-        for(const g of GENRES){
-          if(!obj[g]) obj[g]=[];
-          obj[g]=obj[g].map(it=>({
-            id:String(it.id||crypto.randomUUID()),
-            title:String(it.title||""),
-            status:STATUSES.includes(it.status)?it.status:"未着手",
-            deadline:DEADLINES.includes(it.deadline)?it.deadline:"未分類（未定）"
-          }));
-        }
-        return obj;
-      }catch(e){return Object.fromEntries(GENRES.map(g=>[g,[]]));}
+        const raw=localStorage.getItem(LS_KEY);
+        return raw ? normalizeState(JSON.parse(raw)) : emptyState();
+      }catch(_){ return emptyState(); }
+    }
+    async function cloudLoadOrInit(uid){
+      const { db, doc, getDoc, setDoc } = window.__fb;
+      const ref = doc(db, "bucketlists", uid);
+      const snap = await getDoc(ref);
+      if(snap.exists()){
+        const st = normalizeState(snap.data()?.state || {});
+        localStorage.setItem(LS_KEY, JSON.stringify(st));
+        return st;
+      }else{
+        const st = loadLocal();
+        await setDoc(ref, { state: st, updatedAt: Date.now() });
+        return st;
+      }
     }
 
+    // ===== UI =====
     const gridsEl=document.getElementById("deadlineGrids");
     const cardTmpl=document.getElementById("deadlineCardTmpl");
     const itemTmpl=document.getElementById("itemTmpl");
     const hideDoneEl=document.getElementById("hideDone");
     const filtersEl=document.getElementById("deadlineFilters");
 
+    let state = emptyState();
     const activeDeadlines=new Set(DEADLINES);
+
     function buildFilters(){
       filtersEl.innerHTML="";
       DEADLINES.forEach(d=>{
@@ -120,7 +183,7 @@
         const list=sec.querySelector(".list");
         const items=[];
         for(const g of GENRES){
-          for(const it of state[g]){
+          for(const it of (state[g]||[])){
             if(it.deadline!==d) continue;
             if(hideDoneEl.checked&&it.status==="達成") continue;
             items.push({...it,genre:g});
@@ -142,7 +205,40 @@
       });
     }
 
-    buildFilters();render();
+    // ===== 認証UI =====
+    (function initAuth(){
+      const { auth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } = window.__fb;
+
+      window.addEventListener('unhandledrejection', (e)=>{
+        console.error('Unhandled:', e.reason);
+        alert('[Auth Error]\n' + (e.reason?.code || e.reason?.message || e.reason));
+      });
+
+      signinBtn.onclick = async ()=>{
+        const prov = new GoogleAuthProvider();
+        try{ await signInWithPopup(auth, prov); }
+        catch(err){ console.warn('popup NG → redirect', err?.code||err); await signInWithRedirect(auth, prov); }
+      };
+      signoutBtn.onclick = ()=> signOut(auth);
+      getRedirectResult(auth).catch(err=>console.error('getRedirectResult:', err));
+
+      onAuthStateChanged(auth, async (user)=>{
+        if(user){
+          signinBtn.style.display="none";
+          signoutBtn.style.display="";
+          whoami.textContent = `ログイン中：${user.displayName||user.email}`;
+          state = await cloudLoadOrInit(user.uid);
+        }else{
+          signinBtn.style.display="";
+          signoutBtn.style.display="none";
+          whoami.textContent = "";
+          state = loadLocal();
+        }
+        // 初回/状態変化で再描画
+        if(filtersEl.childElementCount===0) buildFilters();
+        render();
+      });
+    })();
   </script>
 </body>
 </html>
