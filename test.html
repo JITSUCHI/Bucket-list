@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auth Test (Redirect only)</title>
+<style>
+ body { font-family: system-ui; margin: 24px; }
+ button { padding: 8px 14px; }
+ pre { background:#f6f8fa; padding:12px; border:1px solid #ddd; overflow:auto; }
+ .ok{color:#2e7d32} .ng{color:#e53935}
+</style>
+<script type="module">
+  const firebaseConfig = {
+    apiKey: "AIzaSyBMURao1Asl1NyFzgWmRoIWKNKep6Wlz8s",
+    authDomain: "bucketlist-4fd82.firebaseapp.com",
+    projectId: "bucketlist-4fd82",
+    storageBucket: "bucketlist-4fd82.firebasestorage.app",
+    messagingSenderId: "843717902501",
+    appId: "1:843717902501:web:8499a2c78e414716038d4c",
+    measurementId: "G-PGQPCCND2D"
+  };
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import {
+    getAuth, GoogleAuthProvider,
+    signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  auth.useDeviceLanguage?.(); // 任意
+
+  const logEl = document.getElementById('log');
+  const info = (msg) => { logEl.textContent += msg + "\n"; console.log(msg); };
+  const show = (id, txt, cls) => { const el=document.getElementById(id); el.textContent = txt; el.className=cls||""; };
+
+  // 承認ドメインなどの環境を表示
+  show('env', location.origin + "  " + navigator.userAgent);
+
+  // リダイレクト戻りを確認
+  getRedirectResult(auth).then(res=>{
+    if(res?.user){
+      show('status', "ログイン済: " + (res.user.displayName||res.user.email), "ok");
+    }
+  }).catch(err=>{
+    show('status', "getRedirectResult error: " + (err.code||err.message), "ng");
+    info("getRedirectResult: " + (err.stack||err));
+  });
+
+  onAuthStateChanged(auth, (user)=>{
+    if(user){
+      show('status', "ログイン中: " + (user.displayName||user.email), "ok");
+      document.getElementById('signin').style.display="none";
+      document.getElementById('signout').style.display="";
+    }else{
+      show('status', "未ログイン", "");
+      document.getElementById('signin').style.display="";
+      document.getElementById('signout').style.display="none";
+    }
+  });
+
+  window.addEventListener('unhandledrejection', (e)=>{
+    show('status', "Unhandled: " + (e.reason?.code||e.reason?.message||e.reason), "ng");
+    info("Unhandled: " + (e.reason?.stack||e.reason));
+  });
+
+  // 強制リダイレクト方式
+  document.getElementById('signin').onclick = async ()=>{
+    try {
+      await signInWithRedirect(auth, new GoogleAuthProvider());
+    } catch (e) {
+      show('status', "signInWithRedirect error: " + (e.code||e.message), "ng");
+      info("SignIn error: " + (e.stack||e));
+    }
+  };
+  document.getElementById('signout').onclick = ()=> signOut(auth);
+
+</script>
+</head>
+<body>
+  <h1>Auth Test (Redirect only)</h1>
+  <p id="status">状態: 検出中…</p>
+  <p>Origin: <span id="env"></span></p>
+  <button id="signin">Googleでログイン（Redirectのみ）</button>
+  <button id="signout" style="display:none">ログアウト</button>
+  <h3>Log</h3>
+  <pre id="log"></pre>
+  <p>※ Firebase Console → Authentication → 承認済みドメインに <b>jitsuchi.github.io</b> を追加しておくこと。</p>
+</body>
+</html>
