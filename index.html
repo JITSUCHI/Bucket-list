@@ -54,7 +54,11 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import {
-      getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+      getAuth, GoogleAuthProvider,
+      signInWithPopup,               // 既存
+      signInWithRedirect,            // ★ 追加：redirect 用
+      getRedirectResult,             // ★ 追加：redirect 結果取得
+      signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import {
       getFirestore, doc, getDoc, setDoc
@@ -65,7 +69,11 @@
     const db   = getFirestore(app);
 
     // グローバルへ（アプリ本体から参照）
-    window.__fb = { app, auth, db, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, doc, getDoc, setDoc };
+    window.__fb = {
+      app, auth, db,
+      GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+      signOut, onAuthStateChanged, doc, getDoc, setDoc
+    };
   </script>
 </head>
 <body>
@@ -361,16 +369,34 @@
 
     // ====== 認証: ログイン/ログアウト & 初期ロード ======
     (function initAuth(){
-      const { auth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = window.__fb;
+      const { auth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } = window.__fb;
       const signinBtn  = document.getElementById("signin");
       const signoutBtn = document.getElementById("signout");
       const whoami     = document.getElementById("whoami");
 
+      // ★ 追加：未処理の Promise 拒否を可視化（「無反応」を防ぐ）
+      window.addEventListener('unhandledrejection', (e) => {
+        console.error('Unhandled promise rejection:', e.reason);
+        alert('[Auth Error]\n' + (e.reason?.code || e.reason?.message || e.reason));
+      });
+
+      // ★ 修正：まず popup を試し、失敗したら redirect にフォールバック
       signinBtn.onclick = async ()=>{
         const prov = new GoogleAuthProvider();
-        await signInWithPopup(auth, prov);
+        try {
+          await signInWithPopup(auth, prov);
+        } catch (err) {
+          console.warn('Popup failed, fallback to redirect:', err?.code || err);
+          await signInWithRedirect(auth, prov);
+        }
       };
+
       signoutBtn.onclick = ()=> signOut(auth);
+
+      // ★ 追加：リダイレクト戻りの結果を拾う（失敗時のデバッグにも有用）
+      getRedirectResult(auth).catch(err=>{
+        if(err) console.error('getRedirectResult error:', err);
+      });
 
       onAuthStateChanged(auth, async (user)=>{
         if(user){
@@ -388,6 +414,11 @@
         }
       });
     })();
+
+    // ★ 任意：file:// で開いた場合の注意喚起（GitHub Pages運用なら不要）
+    if (location.protocol === 'file:') {
+      alert('このページは file:// では動作しません。必ず http(s) で開いてください。');
+    }
   </script>
 </body>
 </html>
