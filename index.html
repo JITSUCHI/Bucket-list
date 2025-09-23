@@ -25,22 +25,63 @@
     .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
     .toolbar input[type=file]{display:none}
     .hint{color:#666;font-size:12px}
+
+    /* ===== スマホ対応 ===== */
     @media (max-width: 600px){
-  html, body { font-size: 16px; }
-  .btn, button, select, input[type="text"], textarea { min-height: 44px; font-size: 16px; }
-  .toolbar, .controls { flex-direction: column; align-items: stretch; }
-  .item { flex-direction: column; align-items: stretch; }
-  .item .title { white-space: normal; }
-  .item button, .item select { width: 100%; }
-}
+      html, body { font-size: 16px; }
+      header > div, .controls { width: 100%; gap: 8px; }
+      .btn, button, select, input[type="text"], textarea { min-height: 44px; font-size: 16px; }
+      .toolbar, .controls { flex-direction: column; align-items: stretch; }
+      .item { flex-direction: column; align-items: stretch; gap: 10px; padding: 10px; }
+      .item .title { white-space: normal; }
+      .item button, .item select { width: 100%; }
+    }
   </style>
+
+  <!-- Firebase SDK（modular v10）を読み込み＆初期化 -->
+  <script type="module">
+    /* ==== ここをあなたのプロジェクトの設定に置き換えてください ==== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyBMURao1Asl1NyFzgWmRoIWKNKep6Wlz8s",
+      authDomain: "bucketlist-4fd82.firebaseapp.com",
+      projectId: "bucketlist-4fd82",
+      storageBucket: "bucketlist-4fd82.firebasestorage.app",
+      messagingSenderId: "843717902501",
+      appId: "1:843717902501:web:8499a2c78e414716038d4c",
+      measurementId: "G-PGQPCCND2D"
+    };
+    /* =============================================================== */
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    // グローバルへ（アプリ本体から参照）
+    window.__fb = { app, auth, db, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, doc, getDoc, setDoc };
+  </script>
 </head>
 <body>
   <header>
     <h1>BucketList</h1>
-    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
       <a class="btn ghost" href="progress.html">進捗（期限別）</a>
       <a class="btn ghost" href="status.html">状況別</a>
+    </div>
+
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button id="signin" class="btn">Googleでログイン</button>
+      <button id="signout" class="btn" style="display:none">ログアウト</button>
+      <span id="whoami" class="hint"></span>
+
       <label class="btn"><input id="csvFile" type="file" accept=".csv">CSV取り込み</label>
       <label style="font-size:12px;color:#555"><input id="replaceToggle" type="checkbox"> 全置換</label>
       <button id="exportCSV" class="btn">CSV出力</button>
@@ -79,61 +120,66 @@
   </template>
 
   <script>
+    // ====== 定数 ======
     const GENRES=["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
     const STATUSES=["未着手","継続","達成"];
     const DEADLINES=["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
-    const LS_KEY="bucketlist.v2";
+    const LS_KEY="bucketlist.v2";  // ローカルバックアップ用
 
-    // --- 一度だけ v1 -> v2 へ自動移行（残っていた場合） ---
-    (function oneTimeMigrateV1toV2(){
-      try{
-        const v2raw=localStorage.getItem(LS_KEY);
-        if(v2raw){
-          const v2obj=JSON.parse(v2raw);
-          const hasData=Object.values(v2obj||{}).some(a=>Array.isArray(a)&&a.length>0);
-          if(hasData) return;
-        }
-        const v1raw=localStorage.getItem("bucketlist.v1");
-        if(!v1raw) return;
-        const v1=JSON.parse(v1raw);
-        const v2=Object.fromEntries(GENRES.map(g=>[g,[]]));
-        for(const g of GENRES){
-          const arr=Array.isArray(v1?.[g])?v1[g]:[];
-          for(const it of arr){
-            if(!it||!it.title) continue;
-            const sRaw=String(it.status||"");
-            const status = sRaw.includes("達成")? "達成" : sRaw.includes("継続")? "継続" : (STATUSES.includes(sRaw)?sRaw:"未着手");
-            const deadline = DEADLINES.includes(it.deadline)? it.deadline : "未分類（未定）";
-            v2[g].push({id:crypto.randomUUID(), title:String(it.title), status, deadline, note:String(it.note||"")});
-          }
-        }
-        localStorage.setItem(LS_KEY, JSON.stringify(v2));
-        localStorage.removeItem("bucketlist.v1");
-      }catch(e){console.warn("migration skipped", e);}
-    })();
+    // ====== 便利関数 ======
+    function emptyState(){ return Object.fromEntries(GENRES.map(g=>[g,[]])); }
+    function normalizeState(obj){
+      const s=emptyState();
+      for(const g of GENRES){
+        const arr = Array.isArray(obj?.[g]) ? obj[g] : [];
+        s[g]=arr.map(it=>({
+          id:String(it.id||crypto.randomUUID()),
+          title:String(it.title||""),
+          status: STATUSES.includes(it.status) ? it.status :
+                  (String(it.status||"").includes("達成")?"達成":String(it.status||"").includes("継続")?"継続":"未着手"),
+          deadline: DEADLINES.includes(it.deadline)? it.deadline : "未分類（未定）",
+          note: String(it.note||"")
+        }));
+      }
+      return s;
+    }
 
-    function loadState(){
+    // ====== localStorage フォールバック ======
+    function loadLocal(){
       try{
         const raw=localStorage.getItem(LS_KEY);
-        if(!raw) return Object.fromEntries(GENRES.map(g=>[g,[]]));
-        const obj=JSON.parse(raw);
-        for(const g of GENRES){
-          if(!obj[g]) obj[g]=[];
-          obj[g]=obj[g].map(it=>({
-            id:String(it.id||crypto.randomUUID()),
-            title:String(it.title||""),
-            status:STATUSES.includes(it.status)?it.status:"未着手",
-            deadline:DEADLINES.includes(it.deadline)?it.deadline:"未分類（未定）",
-            note:String(it.note||"")
-          }));
-        }
-        return obj;
-      }catch(e){return Object.fromEntries(GENRES.map(g=>[g,[]]));}
+        return raw ? normalizeState(JSON.parse(raw)) : emptyState();
+      }catch(_){ return emptyState(); }
     }
-    function saveState(){localStorage.setItem(LS_KEY, JSON.stringify(state));}
+    function saveLocal(current){ localStorage.setItem(LS_KEY, JSON.stringify(current)); }
 
-    let state=loadState();
+    // ====== Firestore 読み書き ======
+    async function cloudLoadOrInit(uid){
+      const { db, doc, getDoc, setDoc } = window.__fb;
+      const ref = doc(db, "bucketlists", uid);
+      const snap = await getDoc(ref);
+      if(snap.exists()){
+        const data = snap.data()?.state || {};
+        const st = normalizeState(data);
+        saveLocal(st); // ミラー
+        return st;
+      }else{
+        // 初回：ローカルにデータがあればそれを初期値としてクラウドへ
+        const st = loadLocal();
+        await setDoc(ref, { state: st, updatedAt: Date.now() });
+        return st;
+      }
+    }
+    async function cloudSave(uid, current){
+      const { db, doc, setDoc } = window.__fb;
+      const ref = doc(db, "bucketlists", uid);
+      await setDoc(ref, { state: current, updatedAt: Date.now() }, { merge:true });
+    }
 
+    // ====== アプリ状態 ======
+    let state = emptyState();
+
+    // ====== UI構築 ======
     const gridsEl=document.getElementById("genreGrids");
     const cardTmpl=document.getElementById("cardTmpl");
     const itemTmpl=document.getElementById("itemTmpl");
@@ -147,12 +193,22 @@
         const newTitle=sec.querySelector(".newTitle");
         const newStatus=sec.querySelector(".newStatus");
         const newDeadline=sec.querySelector(".newDeadline");
+
         STATUSES.forEach(s=>{const o=document.createElement("option");o.textContent=o.value=s;newStatus.appendChild(o)});
         DEADLINES.forEach(d=>{const o=document.createElement("option");o.textContent=o.value=d;newDeadline.appendChild(o)});
-        sec.querySelector(".add").onclick=()=>{
+
+        sec.querySelector(".add").onclick=async ()=>{
           if(!newTitle.value.trim()) return;
-          state[genre].push({id:crypto.randomUUID(),title:newTitle.value.trim(),status:newStatus.value,deadline:newDeadline.value,note:""});
-          newTitle.value="";saveState();build();
+          state[genre].push({
+            id:crypto.randomUUID(),
+            title:newTitle.value.trim(),
+            status:newStatus.value,
+            deadline:newDeadline.value,
+            note:""
+          });
+          newTitle.value="";
+          await saveState();  // Firestoreへ
+          build();
         };
 
         state[genre].forEach((it,i)=>{
@@ -161,18 +217,25 @@
           node.querySelector(".title").textContent=it.title;
 
           const ss=node.querySelector(".statusSel");
-          STATUSES.forEach(s=>{const o=document.createElement("option");o.textContent=o.value=s;if(s===it.status) o.selected=true;ss.appendChild(o)});
-          ss.onchange=()=>{it.status=ss.value;saveState();build();};
+          STATUSES.forEach(s=>{const o=document.createElement("option");o.textContent=o.value=s;if(s===it.status)o.selected=true;ss.appendChild(o)});
+          ss.onchange=async ()=>{ it.status=ss.value; await saveState(); build(); };
 
           const ds=node.querySelector(".deadlineSel");
-          DEADLINES.forEach(d=>{const o=document.createElement("option");o.textContent=o.value=d;if(d===it.deadline) o.selected=true;ds.appendChild(o)});
-          ds.onchange=()=>{it.deadline=ds.value;saveState();};
+          DEADLINES.forEach(d=>{const o=document.createElement("option");o.textContent=o.value=d;if(d===it.deadline)o.selected=true;ds.appendChild(o)});
+          ds.onchange=async ()=>{ it.deadline=ds.value; await saveState(); };
 
-          node.querySelector(".detail").onclick=()=>{location.href=`detail.html?id=${it.id}&from=index`};
+          node.querySelector(".detail").onclick=()=>{ location.href=`detail.html?id=${it.id}&from=index`; };
 
-          node.querySelector(".up").onclick=()=>{if(i>0){[state[genre][i-1],state[genre][i]]=[state[genre][i],state[genre][i-1]];saveState();build();}};
-          node.querySelector(".down").onclick=()=>{if(i<state[genre].length-1){[state[genre][i+1],state[genre][i]]=[state[genre][i],state[genre][i+1]];saveState();build();}};
-          node.querySelector(".del").onclick=()=>{if(confirm("削除しますか？")){state[genre].splice(i,1);saveState();build();}};
+          node.querySelector(".up").onclick=async ()=>{
+            if(i>0){ [state[genre][i-1],state[genre][i]]=[state[genre][i],state[genre][i-1]]; await saveState(); build(); }
+          };
+          node.querySelector(".down").onclick=async ()=>{
+            if(i<state[genre].length-1){ [state[genre][i+1],state[genre][i]]=[state[genre][i],state[genre][i+1]]; await saveState(); build(); }
+          };
+          node.querySelector(".del").onclick=async ()=>{
+            if(confirm("削除しますか？")){ state[genre].splice(i,1); await saveState(); build(); }
+          };
+
           list.appendChild(node);
         });
 
@@ -180,8 +243,16 @@
       });
     }
 
-    // ===== CSV 取り込み（全置換/マージ） =====
-    // 簡易CSVパーサ（ダブルクオート対応）
+    // ====== 保存（クラウド優先＋ローカルにミラー） ======
+    async function saveState(){
+      saveLocal(state);
+      const user = window.__fb.auth.currentUser;
+      if(user){
+        try{ await cloudSave(user.uid, state); }catch(e){ console.warn("cloud save failed:", e); }
+      }
+    }
+
+    // ====== CSV 取り込み（全置換/マージ） ======
     function parseCSV(text){
       const rows=[]; let row=[], field="", inQ=false;
       for(let i=0;i<text.length;i++){
@@ -230,7 +301,7 @@
       }
 
       const replace=document.getElementById("replaceToggle").checked;
-      const next = replace ? Object.fromEntries(GENRES.map(g=>[g,[]])) : structuredClone(state);
+      const next = replace ? emptyState() : structuredClone(state);
 
       for(let i=1;i<rows.length;i++){
         const r=rows[i];
@@ -250,12 +321,13 @@
       }
 
       state = next;
-      saveState(); build();
+      await saveState();
+      build();
       e.target.value="";
       alert("CSV取り込みが完了しました。");
     };
 
-    // ===== CSV 出力 =====
+    // ====== CSV 出力 ======
     function exportCSV(){
       const rows = [["genre","title","status","deadline","note"]];
       for(const g of GENRES){
@@ -278,16 +350,44 @@
     }
     document.getElementById("exportCSV").onclick = exportCSV;
 
-    // ===== 全削除 =====
-    document.getElementById("clearAll").onclick=()=>{
+    // ====== 全削除 ======
+    document.getElementById("clearAll").onclick = async ()=>{
       if(confirm("全削除しますか?")){
-        state=Object.fromEntries(GENRES.map(g=>[g,[]]));
-        saveState();build();
+        state=emptyState();
+        await saveState();
+        build();
       }
     };
 
-    build();
+    // ====== 認証: ログイン/ログアウト & 初期ロード ======
+    (function initAuth(){
+      const { auth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = window.__fb;
+      const signinBtn  = document.getElementById("signin");
+      const signoutBtn = document.getElementById("signout");
+      const whoami     = document.getElementById("whoami");
+
+      signinBtn.onclick = async ()=>{
+        const prov = new GoogleAuthProvider();
+        await signInWithPopup(auth, prov);
+      };
+      signoutBtn.onclick = ()=> signOut(auth);
+
+      onAuthStateChanged(auth, async (user)=>{
+        if(user){
+          signinBtn.style.display="none";
+          signoutBtn.style.display="";
+          whoami.textContent = `ログイン中：${user.displayName||user.email}`;
+          state = await cloudLoadOrInit(user.uid);
+          build();
+        }else{
+          signinBtn.style.display="";
+          signoutBtn.style.display="none";
+          whoami.textContent = "";
+          state = loadLocal();   // 未ログイン時はローカルを表示
+          build();
+        }
+      });
+    })();
   </script>
 </body>
 </html>
-
