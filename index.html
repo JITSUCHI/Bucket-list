@@ -55,9 +55,9 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import {
       getAuth, GoogleAuthProvider,
-      signInWithPopup,               // 既存
-      signInWithRedirect,            // ★ 追加：redirect 用
-      getRedirectResult,             // ★ 追加：redirect 結果取得
+      signInWithPopup,
+      signInWithRedirect,
+      getRedirectResult,
       signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import {
@@ -127,7 +127,8 @@
     </div>
   </template>
 
-  <script>
+  <!-- ▼▼▼ ここだけ変更：type="module" にして実行順を保証 ▼▼▼ -->
+  <script type="module">
     // ====== 定数 ======
     const GENRES=["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
     const STATUSES=["未着手","継続","達成"];
@@ -374,13 +375,13 @@
       const signoutBtn = document.getElementById("signout");
       const whoami     = document.getElementById("whoami");
 
-      // ★ 追加：未処理の Promise 拒否を可視化（「無反応」を防ぐ）
+      // 未処理の Promise 拒否を可視化（「無反応」を防ぐ）
       window.addEventListener('unhandledrejection', (e) => {
         console.error('Unhandled promise rejection:', e.reason);
         alert('[Auth Error]\n' + (e.reason?.code || e.reason?.message || e.reason));
       });
 
-      // ★ 修正：まず popup を試し、失敗したら redirect にフォールバック
+      // まず popup を試し、失敗したら redirect にフォールバック
       signinBtn.onclick = async ()=>{
         const prov = new GoogleAuthProvider();
         try {
@@ -393,7 +394,7 @@
 
       signoutBtn.onclick = ()=> signOut(auth);
 
-      // ★ 追加：リダイレクト戻りの結果を拾う（失敗時のデバッグにも有用）
+      // リダイレクト戻りの結果を拾う（失敗時のデバッグにも有用）
       getRedirectResult(auth).catch(err=>{
         if(err) console.error('getRedirectResult error:', err);
       });
@@ -415,10 +416,11 @@
       });
     })();
 
-    // ★ 任意：file:// で開いた場合の注意喚起（GitHub Pages運用なら不要）
+    // 任意：file:// で開いた場合の注意喚起（GitHub Pages運用なら不要）
     if (location.protocol === 'file:') {
       alert('このページは file:// では動作しません。必ず http(s) で開いてください。');
     }
   </script>
+  <!-- ▲▲▲ ここだけ変更（type="module"） ▲▲▲ -->
 </body>
 </html>
