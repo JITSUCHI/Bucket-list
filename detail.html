@@ -3,88 +3,259 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BucketList 詳細</title>
+  <title>BucketList - 詳細</title>
   <style>
     body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",sans-serif;background:#f4f6f8;color:#333}
-    header{background:#fff;border-bottom:1px solid #ddd;padding:12px 16px;display:flex;align-items:center}
-    .btn{background:#e9ecf2;border:1px solid #ccc;border-radius:6px;padding:6px 12px;cursor:pointer}
-    main{padding:16px;max-width:800px;margin:0 auto}
-    textarea{width:100%;min-height:200px;font-family:monospace}
-    input,select,textarea{margin-top:8px;margin-bottom:16px;font-size:14px;padding:6px;width:100%}
-    label{font-weight:600;display:block;margin-top:12px}
-    @media (max-width: 600px){
-  html, body { font-size: 16px; }
-  .btn, button, select, input[type="text"], textarea { min-height: 44px; font-size: 16px; }
-  .toolbar, .controls { flex-direction: column; align-items: stretch; }
-  .item { flex-direction: column; align-items: stretch; }
-  .item .title { white-space: normal; }
-  .item button, .item select { width: 100%; }
-}
+    header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #ddd;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 4px rgba(0,0,0,.05)}
+    h1{font-size:18px;margin:0;font-weight:700}
+    main{padding:16px;max-width:860px;margin:0 auto}
+    .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
+    .row{display:flex;gap:12px;align-items:center;margin:8px 0}
+    .row label{width:90px;color:#666}
+    .title{font-size:18px;font-weight:700;margin:0 0 8px}
+    textarea{width:100%;min-height:160px;font-size:14px;padding:10px;border:1px solid #ccc;border-radius:8px}
+    select, input[type=text]{font-size:14px;padding:6px;border:1px solid #ccc;border-radius:6px}
+    .btn{appearance:none;border:none;background:#e9ecf2;color:#333;padding:8px 14px;border-radius:8px;cursor:pointer;border:1px solid #ccc;font-size:14px}
+    .btn.primary{background:#2979ff;color:#fff;border:none}
+    .hint{color:#666;font-size:12px;margin-top:6px}
+    .bar{display:flex;gap:8px;margin-left:auto;align-items:center}
+    a{text-decoration:none;color:#2979ff}
   </style>
+
+  <!-- Firebase（index.htmlと同じ設定） -->
+  <script type="module">
+    const firebaseConfig = {
+      apiKey: "AIzaSyBMURao1Asl1NyFzgWmRoIWKNKep6Wlz8s",
+      authDomain: "bucketlist-4fd82.firebaseapp.com",
+      projectId: "bucketlist-4fd82",
+      storageBucket: "bucketlist-4fd82.firebasestorage.app",
+      messagingSenderId: "843717902501",
+      appId: "1:843717902501:web:8499a2c78e414716038d4c",
+      measurementId: "G-PGQPCCND2D"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getAuth, GoogleAuthProvider,
+      signInWithPopup, signInWithRedirect, getRedirectResult,
+      signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    // ---- Firebase init
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    // グローバル共有（indexと同じ）
+    window.__fb = {
+      app, auth, db,
+      GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+      signOut, onAuthStateChanged, doc, getDoc, setDoc
+    };
+  </script>
 </head>
 <body>
   <header>
-    <button id="backBtn" class="btn">← 戻る</button>
-    <h1 style="margin-left:12px;font-size:18px">詳細ページ</h1>
+    <h1>BucketList - 詳細</h1>
+    <div class="bar">
+      <a href="index.html" class="btn">← 戻る</a>
+      <button id="signin" class="btn">Googleでログイン</button>
+      <button id="signout" class="btn" style="display:none">ログアウト</button>
+      <span id="whoami" class="hint"></span>
+    </div>
   </header>
+
   <main>
-    <label>タイトル<input id="titleInput" type="text"></label>
-    <label>ステータス
-      <select id="statusSelect"></select>
-    </label>
-    <label>期限
-      <select id="deadlineSelect"></select>
-    </label>
-    <label>詳細メモ (Markdownで入力可)
-      <textarea id="noteArea"></textarea>
-    </label>
-    <button id="saveBtn" class="btn">保存</button>
+    <section class="card">
+      <div class="title" id="itemTitle">（読み込み中…）</div>
+
+      <div class="row">
+        <label>状態</label>
+        <select id="statusSel"></select>
+      </div>
+
+      <div class="row">
+        <label>期限</label>
+        <select id="deadlineSel"></select>
+      </div>
+
+      <div class="row" style="align-items:flex-start">
+        <label>メモ</label>
+        <div style="flex:1">
+          <textarea id="noteArea" placeholder="詳細メモを入力…"></textarea>
+          <div class="hint" id="saveHint">未保存</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="saveBtn" class="btn primary">保存</button>
+        <button id="reloadBtn" class="btn">再読み込み</button>
+      </div>
+    </section>
   </main>
 
-  <script>
+  <!-- ページ本体 -->
+  <script type="module">
+    // ====== 定義・ヘルパ ======
     const GENRES=["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
     const STATUSES=["未着手","継続","達成"];
     const DEADLINES=["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
     const LS_KEY="bucketlist.v2";
 
-    function loadState(){return JSON.parse(localStorage.getItem(LS_KEY)||"{}");}
-    function saveState(s){localStorage.setItem(LS_KEY, JSON.stringify(s));}
-
-    const params=new URLSearchParams(location.search);
-    const id=params.get("id");
-    const from=params.get("from")||"index";
-
-    const state=loadState();
-    let target=null, genreKey=null;
-    for(const g of GENRES){
-      const found=state[g]?.find(it=>it.id===id);
-      if(found){target=found;genreKey=g;break;}
+    function emptyState(){ return Object.fromEntries(GENRES.map(g=>[g,[]])); }
+    function normalizeState(obj){
+      const s=emptyState();
+      for(const g of GENRES){
+        const arr = Array.isArray(obj?.[g]) ? obj[g] : [];
+        s[g]=arr.map(it=>({
+          id:String(it.id||crypto.randomUUID()),
+          title:String(it.title||""),
+          status: STATUSES.includes(it.status) ? it.status :
+                  (String(it.status||"").includes("達成")?"達成":String(it.status||"").includes("継続")?"継続":"未着手"),
+          deadline: DEADLINES.includes(it.deadline)? it.deadline : "未分類（未定）",
+          note: String(it.note||"")
+        }));
+      }
+      return s;
     }
-    if(!target){alert("対象が見つかりません");location.href="index.html";}
+    function loadLocal(){
+      try{
+        const raw=localStorage.getItem(LS_KEY);
+        return raw ? normalizeState(JSON.parse(raw)) : emptyState();
+      }catch(_){ return emptyState(); }
+    }
+    function saveLocal(current){ localStorage.setItem(LS_KEY, JSON.stringify(current)); }
 
-    // 初期表示
-    document.getElementById("titleInput").value=target.title;
-    const statusSel=document.getElementById("statusSelect");
-    STATUSES.forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;if(s===target.status) o.selected=true;statusSel.appendChild(o)});
-    const deadlineSel=document.getElementById("deadlineSelect");
-    DEADLINES.forEach(d=>{const o=document.createElement("option");o.value=d;o.textContent=d;if(d===target.deadline) o.selected=true;deadlineSel.appendChild(o)});
-    document.getElementById("noteArea").value=target.note||"";
+    // Firestore helpers
+    async function cloudLoadOrInit(uid){
+      const { db, doc, getDoc, setDoc } = window.__fb;
+      const ref = doc(db, "bucketlists", uid);
+      const snap = await getDoc(ref);
+      if(snap.exists()){
+        const data = snap.data()?.state || {};
+        const st = normalizeState(data);
+        saveLocal(st);
+        return st;
+      }else{
+        const st = loadLocal();
+        await setDoc(ref, { state: st, updatedAt: Date.now() });
+        return st;
+      }
+    }
+    async function cloudSave(uid, current){
+      const { db, doc, setDoc } = window.__fb;
+      const ref = doc(db, "bucketlists", uid);
+      await setDoc(ref, { state: current, updatedAt: Date.now() }, { merge:true });
+    }
+    async function saveState(st){
+      saveLocal(st);
+      const user = window.__fb.auth.currentUser;
+      if(user){
+        try{ await cloudSave(user.uid, st); }catch(e){ console.warn("cloud save failed:", e); }
+      }
+    }
 
-    // 保存処理
-    document.getElementById("saveBtn").onclick=()=>{
-      target.title=document.getElementById("titleInput").value.trim();
-      target.status=statusSel.value;
-      target.deadline=deadlineSel.value;
-      target.note=document.getElementById("noteArea").value;
-      saveState(state);
-      alert("保存しました");
+    // URL パラメータ
+    const params = new URLSearchParams(location.search);
+    const targetId = params.get("id");
+
+    // UI 参照
+    const titleEl   = document.getElementById("itemTitle");
+    const statusSel = document.getElementById("statusSel");
+    const deadlineSel = document.getElementById("deadlineSel");
+    const noteArea  = document.getElementById("noteArea");
+    const saveBtn   = document.getElementById("saveBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+    const saveHint  = document.getElementById("saveHint");
+
+    // セレクト初期化
+    STATUSES.forEach(s=>{const o=document.createElement("option");o.value=o.textContent=s;statusSel.appendChild(o)});
+    DEADLINES.forEach(d=>{const o=document.createElement("option");o.value=o.textContent=d;deadlineSel.appendChild(o)});
+
+    let state = emptyState();
+    let currentRef = { genre: null, index: -1 }; // 対象位置
+
+    function findById(st, id){
+      for(const g of GENRES){
+        const idx = st[g].findIndex(x=>x.id===id);
+        if(idx>=0) return { genre:g, index:idx };
+      }
+      return { genre:null, index:-1 };
+    }
+
+    function render(){
+      if(!currentRef.genre){ titleEl.textContent="対象が見つかりません"; return; }
+      const it = state[currentRef.genre][currentRef.index];
+      titleEl.textContent = it.title || "(無題)";
+      statusSel.value = it.status;
+      deadlineSel.value = it.deadline;
+      noteArea.value = it.note || "";
+      saveHint.textContent = "未保存";
+    }
+
+    // 変更イベント（オート保存は控えめに、ボタンで確定）
+    statusSel.onchange = ()=> saveHint.textContent="未保存（状態が変更されました）";
+    deadlineSel.onchange = ()=> saveHint.textContent="未保存（期限が変更されました）";
+    noteArea.addEventListener('input', ()=>{ saveHint.textContent="未保存（メモ編集中）"; });
+
+    async function doSave(){
+      if(!currentRef.genre) return;
+      const it = state[currentRef.genre][currentRef.index];
+      it.status = statusSel.value;
+      it.deadline = deadlineSel.value;
+      it.note = noteArea.value;
+      await saveState(state);
+      saveHint.textContent = "保存済み";
+    }
+
+    saveBtn.onclick = doSave;
+    reloadBtn.onclick = async ()=>{
+      const user = window.__fb.auth.currentUser;
+      state = user ? await cloudLoadOrInit(user.uid) : loadLocal();
+      currentRef = findById(state, targetId);
+      render();
     };
 
-    // 戻る処理
-    document.getElementById("backBtn").onclick=()=>{
-      location.href= from==="status" ? "status.html" : "index.html";
-    };
+    // ===== 認証UI（indexと同様） =====
+    (function initAuth(){
+      const { auth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } = window.__fb;
+      const signinBtn  = document.getElementById("signin");
+      const signoutBtn = document.getElementById("signout");
+      const whoami     = document.getElementById("whoami");
+
+      window.addEventListener('unhandledrejection', (e) => {
+        console.error('Unhandled promise rejection:', e.reason);
+        alert('[Auth Error]\n' + (e.reason?.code || e.reason?.message || e.reason));
+      });
+
+      signinBtn.onclick = async ()=>{
+        const prov = new GoogleAuthProvider();
+        try { await signInWithPopup(auth, prov); }
+        catch (err) { console.warn('Popup failed, fallback to redirect:', err?.code || err); await signInWithRedirect(auth, prov); }
+      };
+      signoutBtn.onclick = ()=> signOut(auth);
+
+      getRedirectResult(auth).catch(err=>{ if(err) console.error('getRedirectResult error:', err); });
+
+      onAuthStateChanged(auth, async (user)=>{
+        if(user){
+          signinBtn.style.display="none";
+          signoutBtn.style.display="";
+          whoami.textContent = `ログイン中：${user.displayName||user.email}`;
+          state = await cloudLoadOrInit(user.uid);
+        }else{
+          signinBtn.style.display="";
+          signoutBtn.style.display="none";
+          whoami.textContent = "";
+          state = loadLocal();
+        }
+        currentRef = findById(state, targetId);
+        render();
+      });
+    })();
   </script>
 </body>
 </html>
-
