@@ -6,7 +6,7 @@
   <title>状況別ビュー</title>
   <style>
     body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",sans-serif;background:#f4f6f8;color:#333}
-    header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #ddd;padding:12px 16px;display:flex;gap:12px;align-items:center}
+    header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #ddd;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
     .btn{appearance:none;border:none;background:#e9ecf2;color:#333;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid #ccc;font-size:14px}
     main{padding:16px;max-width:860px;margin:0 auto}
     .controls{background:#fff;border:1px solid #ddd;border-radius:12px;padding:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
@@ -20,20 +20,57 @@
     .item[data-status="継続"] .title{color:#2e7d32;font-weight:600}
     .item[data-status="達成"] .title{text-decoration:line-through;color:#777}
     .muted{color:#666;font-size:13px}
+    .who{margin-left:auto;color:#666;font-size:12px}
     @media (max-width: 600px){
-  html, body { font-size: 16px; }
-  .btn, button, select, input[type="text"], textarea { min-height: 44px; font-size: 16px; }
-  .toolbar, .controls { flex-direction: column; align-items: stretch; }
-  .item { flex-direction: column; align-items: stretch; }
-  .item .title { white-space: normal; }
-  .item button, .item select { width: 100%; }
-}
+      html, body { font-size: 16px; }
+      .btn, button, select, input[type="text"], textarea { min-height: 44px; font-size: 16px; }
+      .toolbar, .controls { flex-direction: column; align-items: stretch; }
+      .item { flex-direction: column; align-items: stretch; }
+      .item .title { white-space: normal; }
+      .item button, .item select { width: 100%; }
+    }
   </style>
+
+  <!-- Firebase（index/detailと同じ） -->
+  <script type="module">
+    const firebaseConfig = {
+      apiKey: "AIzaSyBMURao1Asl1NyFzgWmRoIWKNKep6Wlz8s",
+      authDomain: "bucketlist-4fd82.firebaseapp.com",
+      projectId: "bucketlist-4fd82",
+      storageBucket: "bucketlist-4fd82.firebasestorage.app",
+      messagingSenderId: "843717902501",
+      appId: "1:843717902501:web:8499a2c78e414716038d4c",
+      measurementId: "G-PGQPCCND2D"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getAuth, GoogleAuthProvider,
+      signInWithPopup, signInWithRedirect, getRedirectResult,
+      signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    window.__fb = {
+      app, auth, db,
+      GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+      signOut, onAuthStateChanged, doc, getDoc, setDoc
+    };
+  </script>
 </head>
 <body>
   <header>
     <h1 style="font-size:18px;margin:0">状況別ビュー</h1>
     <a class="btn" href="index.html">← Indexへ戻る</a>
+    <span class="who" id="whoami"></span>
+    <button id="signin" class="btn" style="margin-left:auto">Googleでログイン</button>
+    <button id="signout" class="btn" style="display:none">ログアウト</button>
   </header>
 
   <main>
@@ -64,10 +101,14 @@
     </div>
   </template>
 
-  <script>
+  <script type="module">
     const GENRES=["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
     const STATUSES=["未着手","継続","達成"];
     const LS_KEY="bucketlist.v2";
+
+    const whoami=document.getElementById("whoami");
+    const signinBtn=document.getElementById("signin");
+    const signoutBtn=document.getElementById("signout");
 
     const normalizeStatus = (s) => {
       const t = String(s||"").trim();
@@ -77,29 +118,43 @@
       return "未着手";
     };
 
-    function loadState(){
+    function emptyState(){ return Object.fromEntries(GENRES.map(g=>[g,[]])); }
+    function normalizeState(obj){
+      const s=emptyState();
+      for(const g of GENRES){
+        const arr = Array.isArray(obj?.[g]) ? obj[g] : [];
+        s[g]=arr.map(it=>({
+          id:String(it.id||crypto.randomUUID()),
+          title:String(it.title||""),
+          status: normalizeStatus(it.status),
+          deadline: String(it.deadline||""),
+          note: String(it.note||"")
+        }));
+      }
+      return s;
+    }
+    function loadLocal(){
       try{
         const raw=localStorage.getItem(LS_KEY);
-        const base = Object.fromEntries(GENRES.map(g=>[g,[]]));
-        if(!raw) return base;
-        const obj=JSON.parse(raw);
-        for(const g of GENRES){
-          const arr = Array.isArray(obj[g]) ? obj[g] : [];
-          base[g] = arr.map(it=>({
-            id:String(it.id||crypto.randomUUID()),
-            title:String(it.title||""),
-            status: normalizeStatus(it.status),
-            deadline: String(it.deadline||""),
-            note: String(it.note||"")
-          }));
-        }
-        return base;
-      }catch(_){
-        return Object.fromEntries(GENRES.map(g=>[g,[]]));
+        return raw ? normalizeState(JSON.parse(raw)) : emptyState();
+      }catch(_){ return emptyState(); }
+    }
+    async function cloudLoadOrInit(uid){
+      const { db, doc, getDoc, setDoc } = window.__fb;
+      const ref = doc(db, "bucketlists", uid);
+      const snap = await getDoc(ref);
+      if(snap.exists()){
+        const st = normalizeState(snap.data()?.state || {});
+        localStorage.setItem(LS_KEY, JSON.stringify(st));
+        return st;
+      }else{
+        const st = loadLocal();
+        await setDoc(ref, { state: st, updatedAt: Date.now() });
+        return st;
       }
     }
 
-    const state=loadState();
+    let state = emptyState();
     const container=document.getElementById("container");
     const statusSelect=document.getElementById("statusSelect");
     const cardTmpl=document.getElementById("cardTmpl");
@@ -148,12 +203,42 @@
       container.appendChild(sec);
     }
 
-    // 初期選択を「継続」に設定
-    statusSelect.value="継続";
-    render();
+    // ===== 認証UI =====
+    (function initAuth(){
+      const { auth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } = window.__fb;
 
+      window.addEventListener('unhandledrejection', (e)=>{
+        console.error('Unhandled:', e.reason);
+        alert('[Auth Error]\n' + (e.reason?.code || e.reason?.message || e.reason));
+      });
+
+      signinBtn.onclick = async ()=>{
+        const prov = new GoogleAuthProvider();
+        try{ await signInWithPopup(auth, prov); }
+        catch(err){ console.warn('popup NG → redirect', err?.code||err); await signInWithRedirect(auth, prov); }
+      };
+      signoutBtn.onclick = ()=> signOut(auth);
+      getRedirectResult(auth).catch(err=>console.error('getRedirectResult:', err));
+
+      onAuthStateChanged(auth, async (user)=>{
+        if(user){
+          signinBtn.style.display="none";
+          signoutBtn.style.display="";
+          whoami.textContent = `ログイン中：${user.displayName||user.email}`;
+          state = await cloudLoadOrInit(user.uid);
+        }else{
+          signinBtn.style.display="";
+          signoutBtn.style.display="none";
+          whoami.textContent = "";
+          state = loadLocal();
+        }
+        if(!statusSelect.value) statusSelect.value="継続"; // 初期選択
+        render();
+      });
+    })();
+
+    // フィルタ変更
     statusSelect.addEventListener("change", render);
   </script>
 </body>
 </html>
-
