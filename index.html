@@ -12,12 +12,13 @@
     .btn{appearance:none;border:none;background:#e9ecf2;color:#333;padding:6px 12px;border-radius:6px;cursor:pointer;border:1px solid #ccc;font-size:14px}
     .btn.ghost{background:#fff}
     .btn.danger{background:#e53935;color:#fff;border:none}
+    .btn.primary{background:#2979ff;color:#fff;border:none}
     main{padding:16px;max-width:860px;margin:0 auto}
     .grid{display:flex;flex-direction:column;gap:20px}
     .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
     .card h2{font-size:15px;color:#555;margin:0 0 12px}
     .list{display:flex;flex-direction:column;gap:6px}
-    .item{display:flex;gap:8px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:8px;padding:6px}
+    .item{display:flex;gap:8px;align-items:center;background:#fafafa;border:1px solid #ddd;border-radius:8px;padding:6px;flex-wrap:wrap}
     .title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .item[data-status="継続"] .title{color:#2e7d32;font-weight:600}
     .item[data-status="達成"] .title{text-decoration:line-through;color:#777}
@@ -25,6 +26,11 @@
     .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
     .toolbar input[type=file]{display:none}
     .hint{color:#666;font-size:12px}
+    .editArea{display:none;width:100%;margin-top:8px;background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px}
+    .editArea .row{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}
+    .editArea input[type=text]{flex:1;min-width:220px;padding:6px;border:1px solid #ccc;border-radius:6px}
+    .editArea textarea{width:100%;min-height:120px;font-size:14px;padding:8px;border:1px solid #ccc;border-radius:6px}
+    .editBar{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
 
     /* ===== スマホ対応 ===== */
     @media (max-width: 600px){
@@ -38,9 +44,8 @@
     }
   </style>
 
-  <!-- Firebase SDK（modular v10）を読み込み＆初期化 -->
+  <!-- Firebase SDK（modular v10） -->
   <script type="module">
-    /* ==== ここをあなたのプロジェクトの設定に置き換えてください ==== */
     const firebaseConfig = {
       apiKey: "AIzaSyBMURao1Asl1NyFzgWmRoIWKNKep6Wlz8s",
       authDomain: "bucketlist-4fd82.firebaseapp.com",
@@ -50,14 +55,11 @@
       appId: "1:843717902501:web:8499a2c78e414716038d4c",
       measurementId: "G-PGQPCCND2D"
     };
-    /* =============================================================== */
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import {
       getAuth, GoogleAuthProvider,
-      signInWithPopup,
-      signInWithRedirect,
-      getRedirectResult,
+      signInWithPopup, signInWithRedirect, getRedirectResult,
       signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import {
@@ -68,7 +70,6 @@
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    // グローバルへ（アプリ本体から参照）
     window.__fb = {
       app, auth, db,
       GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
@@ -115,25 +116,42 @@
     </section>
   </template>
 
+  <!-- ここを拡張：編集エリアをテンプレ内に追加 -->
   <template id="itemTmpl">
     <div class="item">
       <div class="title"></div>
       <select class="statusSel"></select>
       <select class="deadlineSel"></select>
+      <button class="edit btn">編集</button>
       <button class="detail btn">詳細</button>
       <button class="up btn">↑</button>
       <button class="down btn">↓</button>
       <button class="del btn danger">✕</button>
+
+      <div class="editArea">
+        <div class="row">
+          <label style="min-width:60px;color:#666">タイトル</label>
+          <input type="text" class="titleInput" placeholder="タイトルを入力" />
+        </div>
+        <div class="row" style="align-items:flex-start">
+          <label style="min-width:60px;color:#666">メモ</label>
+          <textarea class="noteInput" placeholder="詳細メモを入力…"></textarea>
+        </div>
+        <div class="editBar">
+          <button class="saveEdit btn primary">保存</button>
+          <button class="cancelEdit btn">キャンセル</button>
+        </div>
+      </div>
     </div>
   </template>
 
-  <!-- ▼▼▼ ここだけ変更：type="module" にして実行順を保証 ▼▼▼ -->
+  <!-- アプリ本体（モジュール化で実行順を保証） -->
   <script type="module">
     // ====== 定数 ======
     const GENRES=["旅行・冒険","学習・スキル","キャリア・お金","健康・ライフスタイル","趣味・体験","精神・教養"];
     const STATUSES=["未着手","継続","達成"];
     const DEADLINES=["1か月以内","3か月以内","半年以内","1年以内","3年以内","5年以内","10年以内","未分類（未定）"];
-    const LS_KEY="bucketlist.v2";  // ローカルバックアップ用
+    const LS_KEY="bucketlist.v2";
 
     // ====== 便利関数 ======
     function emptyState(){ return Object.fromEntries(GENRES.map(g=>[g,[]])); }
@@ -173,7 +191,6 @@
         saveLocal(st); // ミラー
         return st;
       }else{
-        // 初回：ローカルにデータがあればそれを初期値としてクラウドへ
         const st = loadLocal();
         await setDoc(ref, { state: st, updatedAt: Date.now() });
         return st;
@@ -223,8 +240,11 @@
         state[genre].forEach((it,i)=>{
           const node=itemTmpl.content.firstElementChild.cloneNode(true);
           node.dataset.status=it.status;
+
+          // 表示部
           node.querySelector(".title").textContent=it.title;
 
+          // 状態/期限は即時保存
           const ss=node.querySelector(".statusSel");
           STATUSES.forEach(s=>{const o=document.createElement("option");o.textContent=o.value=s;if(s===it.status)o.selected=true;ss.appendChild(o)});
           ss.onchange=async ()=>{ it.status=ss.value; await saveState(); build(); };
@@ -233,8 +253,10 @@
           DEADLINES.forEach(d=>{const o=document.createElement("option");o.textContent=o.value=d;if(d===it.deadline)o.selected=true;ds.appendChild(o)});
           ds.onchange=async ()=>{ it.deadline=ds.value; await saveState(); };
 
+          // 詳細ページ遷移は残す（任意）
           node.querySelector(".detail").onclick=()=>{ location.href=`detail.html?id=${it.id}&from=index`; };
 
+          // 並べ替え/削除
           node.querySelector(".up").onclick=async ()=>{
             if(i>0){ [state[genre][i-1],state[genre][i]]=[state[genre][i],state[genre][i-1]]; await saveState(); build(); }
           };
@@ -244,6 +266,56 @@
           node.querySelector(".del").onclick=async ()=>{
             if(confirm("削除しますか？")){ state[genre].splice(i,1); await saveState(); build(); }
           };
+
+          // ===== 編集エリア =====
+          const editBtn = node.querySelector(".edit");
+          const area    = node.querySelector(".editArea");
+          const titleIn = node.querySelector(".titleInput");
+          const noteIn  = node.querySelector(".noteInput");
+          const saveEd  = node.querySelector(".saveEdit");
+          const cancelEd= node.querySelector(".cancelEdit");
+
+          function openEditor(){
+            titleIn.value = it.title;
+            noteIn.value  = it.note || "";
+            area.style.display = "block";
+            editBtn.textContent="編集を閉じる";
+            titleIn.focus();
+          }
+          function closeEditor(){
+            area.style.display = "hidden" ? "" : "none";
+            area.style.display = "none";
+            editBtn.textContent="編集";
+          }
+
+          editBtn.onclick = ()=>{
+            if(area.style.display==="none" || area.style.display===""){
+              openEditor();
+            }else{
+              closeEditor();
+            }
+          };
+          cancelEd.onclick = closeEditor;
+
+          // 保存（Enter/Ctrl+Enter対応）
+          async function doSave(){
+            const newTitle = titleIn.value.trim();
+            if(!newTitle){ alert("タイトルは必須です"); titleIn.focus(); return; }
+            it.title = newTitle;
+            it.note  = noteIn.value;
+            await saveState();
+            build(); // 反映
+          }
+          saveEd.onclick = doSave;
+          titleIn.addEventListener("keydown",(e)=>{
+            if(e.key==="Enter" && !e.isComposing){ e.preventDefault(); doSave(); }
+          });
+          noteIn.addEventListener("keydown",(e)=>{
+            if((e.metaKey||e.ctrlKey) && e.key==="Enter"){ e.preventDefault(); doSave(); }
+          });
+
+          // タイトルのダブルクリックでも編集を開く
+          node.querySelector(".title").ondblclick = openEditor;
 
           list.appendChild(node);
         });
@@ -375,13 +447,12 @@
       const signoutBtn = document.getElementById("signout");
       const whoami     = document.getElementById("whoami");
 
-      // 未処理の Promise 拒否を可視化（「無反応」を防ぐ）
       window.addEventListener('unhandledrejection', (e) => {
         console.error('Unhandled promise rejection:', e.reason);
         alert('[Auth Error]\n' + (e.reason?.code || e.reason?.message || e.reason));
       });
 
-      // まず popup を試し、失敗したら redirect にフォールバック
+      // popup → 失敗時 redirect
       signinBtn.onclick = async ()=>{
         const prov = new GoogleAuthProvider();
         try {
@@ -394,7 +465,6 @@
 
       signoutBtn.onclick = ()=> signOut(auth);
 
-      // リダイレクト戻りの結果を拾う（失敗時のデバッグにも有用）
       getRedirectResult(auth).catch(err=>{
         if(err) console.error('getRedirectResult error:', err);
       });
@@ -405,22 +475,19 @@
           signoutBtn.style.display="";
           whoami.textContent = `ログイン中：${user.displayName||user.email}`;
           state = await cloudLoadOrInit(user.uid);
-          build();
         }else{
           signinBtn.style.display="";
           signoutBtn.style.display="none";
           whoami.textContent = "";
           state = loadLocal();   // 未ログイン時はローカルを表示
-          build();
         }
+        build();
       });
     })();
 
-    // 任意：file:// で開いた場合の注意喚起（GitHub Pages運用なら不要）
     if (location.protocol === 'file:') {
       alert('このページは file:// では動作しません。必ず http(s) で開いてください。');
     }
   </script>
-  <!-- ▲▲▲ ここだけ変更（type="module"） ▲▲▲ -->
 </body>
 </html>
